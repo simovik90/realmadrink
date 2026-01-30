@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pitch-dark: #0d3b2e;
+  --pitch: #1a6b4f;
+  --pitch-light: #228b5e;
+  --stripe: #2da86a;
+  --sport-orange: #ff6b35;
+  --sport-gold: #f4a261;
+  --sport-white: #f8f9fa;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, var(--pitch-dark) 0%, var(--pitch) 25%, var(--pitch-light) 50%, var(--pitch) 75%, var(--pitch-dark) 100%);
+  background-attachment: fixed;
+}
+
+/* Safe area per iPhone notch */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 0.75rem);
+  }
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+}
+
+/* Touch targets minimo 44px per accessibilità mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Pallone loader */
+@keyframes ball-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.ball-loader {
+  animation: ball-spin 1.2s ease-in-out infinite;
+}
