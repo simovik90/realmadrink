@@ -10,7 +10,20 @@ import {
 export async function GET() {
   try {
     const [matchPlayers, totalMatches] = await Promise.all([
-      prisma.matchPlayer.findMany({ include: { player: true } }),
+      prisma.matchPlayer.findMany({
+        include: {
+          player: {
+            select: {
+              name: true,
+              age: true,
+              practicesSport: true,
+              sportTimesPerWeek: true,
+              hasPlayedFootball: true,
+              footballYearsAgo: true,
+            },
+          },
+        },
+      }),
       prisma.match.count(),
     ]);
     const byPlayer = new Map<

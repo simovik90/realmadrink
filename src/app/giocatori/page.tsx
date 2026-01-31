@@ -73,7 +73,7 @@ export default function GiocatoriPage() {
         isGoalkeeper,
         age: age.trim() ? parseInt(age, 10) : null,
         practicesSport,
-        sportTimesPerWeek: sportTimesPerWeek.trim() ? parseInt(sportTimesPerWeek, 10) : null,
+        sportTimesPerWeek: practicesSport && sportTimesPerWeek.trim() ? parseInt(sportTimesPerWeek, 10) : null,
         hasPlayedFootball,
         footballYearsAgo: footballYearsAgo.trim() ? parseInt(footballYearsAgo, 10) : null,
       };

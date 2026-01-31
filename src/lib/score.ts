@@ -53,9 +53,9 @@ function ageToScore(age: number | null): number | null {
   return Math.round(50 + 50 * exp);
 }
 
-/** Sport: pratica e volte/settimana. 0-7+ → 0-100, nessuna pratica = 0. */
+/** Sport: conta solo se pratica sport; volte/settimana 0-7 → 0-100. Se non pratica = null. */
 function sportToScore(practices: boolean | null, timesPerWeek: number | null): number | null {
-  if (practices !== true) return timesPerWeek != null && timesPerWeek > 0 ? Math.min(100, timesPerWeek * 15) : null;
+  if (practices !== true) return null;
   const t = timesPerWeek ?? 0;
   return Math.min(100, Math.round((t / 7) * 100));
 }
