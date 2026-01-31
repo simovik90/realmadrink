@@ -1,12 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import BallLoader from "@/components/BallLoader";
+import {
+  distributeByScore,
+  teamScoreSum,
+  computePlayerScore,
+  getGroupStats,
+  type PlayerWithScore,
+  type BasePlayer,
+} from "@/lib/score";
 
-type Player = { id: string; name: string; isGoalkeeper: boolean };
+type Player = {
+  id: string;
+  name: string;
+  isGoalkeeper: boolean;
+  age?: number | null;
+  practicesSport?: boolean | null;
+  sportTimesPerWeek?: number | null;
+  hasPlayedFootball?: boolean | null;
+  footballYearsAgo?: number | null;
+};
 
-type TeamEntry = { playerId: string; name: string; isGoalkeeper: boolean; team: number };
+type TeamEntry = {
+  playerId: string;
+  name: string;
+  isGoalkeeper: boolean;
+  team: number;
+  score: number;
+};
+
+type ClassificaResponse = {
+  list: { playerId: string; goals: number; presenze: number; score: number }[];
+  totalMatches: number;
+};
 
 export default function PartitaPage() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -19,12 +47,27 @@ export default function PartitaPage() {
   const [noGoalkeepers, setNoGoalkeepers] = useState(false);
   const [mode, setMode] = useState<"sorteggia" | "manuale">("sorteggia");
   const [manualTeam, setManualTeam] = useState<Record<string, 1 | 2>>({});
+  const [classificaData, setClassificaData] = useState<ClassificaResponse | null>(null);
+  const [dragged, setDragged] = useState<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
 
   useEffect(() => {
     fetch("/api/players")
       .then((r) => r.json())
       .then((data) => setPlayers(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/classifica")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && Array.isArray(data.list) && typeof data.totalMatches === "number") {
+          setClassificaData({ list: data.list, totalMatches: data.totalMatches });
+        } else {
+          setClassificaData(null);
+        }
+      })
+      .catch(() => setClassificaData(null));
   }, []);
 
   const togglePlayer = (id: string) => {
@@ -50,7 +93,35 @@ export default function PartitaPage() {
     else setSelectedIds(new Set(players.map((p) => p.id)));
   };
 
-  const generateTeams = () => {
+  const getScoreForPlayer = useCallback(
+    (p: Player): number => {
+      if (!classificaData) return 50;
+      const entry = classificaData.list.find((e) => e.playerId === p.id);
+      if (entry) return entry.score;
+      const list = classificaData.list.map((e) => ({ goals: e.goals, presenze: e.presenze }));
+      const { groupAvgGoalsPerGame, groupAvgAttendance } = getGroupStats(
+        list,
+        classificaData.totalMatches
+      );
+      const base: BasePlayer = {
+        age: p.age ?? null,
+        practicesSport: p.practicesSport ?? null,
+        sportTimesPerWeek: p.sportTimesPerWeek ?? null,
+        hasPlayedFootball: p.hasPlayedFootball ?? null,
+        footballYearsAgo: p.footballYearsAgo ?? null,
+      };
+      return computePlayerScore(
+        base,
+        { goals: 0, presenze: 0 },
+        classificaData.totalMatches,
+        groupAvgGoalsPerGame,
+        groupAvgAttendance
+      );
+    },
+    [classificaData]
+  );
+
+  const suggestTeams = () => {
     const selected = players.filter((p) => selectedIds.has(p.id));
     if (selected.length < 2) {
       alert("Seleziona almeno 2 giocatori.");
@@ -64,70 +135,30 @@ export default function PartitaPage() {
     setTeams(null);
 
     setTimeout(() => {
-      const shuffle = <T,>(arr: T[]): T[] => {
-        const out = [...arr];
-        for (let i = out.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [out[i], out[j]] = [out[j], out[i]];
-        }
-        return out;
-      };
-
-      const shuffled = shuffle(selected);
-      const half = shuffled.length / 2;
-
-      if (noGoalkeepers) {
-        // Senza portieri: split a metà (stesso numero per squadra)
-        const team1: TeamEntry[] = shuffled.slice(0, half).map((p) => ({
-          playerId: p.id,
-          name: p.name,
-          isGoalkeeper: false,
-          team: 1,
-        }));
-        const team2: TeamEntry[] = shuffled.slice(half).map((p) => ({
-          playerId: p.id,
-          name: p.name,
-          isGoalkeeper: false,
-          team: 2,
-        }));
-        setTeams({ team1, team2 });
-      } else {
-        // Con portieri: 1 portiere per squadra, resto diviso a metà
-        const portieri = selected.filter((p) => p.isGoalkeeper);
-        const altri = selected.filter((p) => !p.isGoalkeeper);
-        let keeper1: Player;
-        let keeper2: Player;
-        let rest: Player[];
-        if (portieri.length >= 2) {
-          const [p1, p2] = shuffle(portieri).slice(0, 2);
-          keeper1 = p1;
-          keeper2 = p2;
-          rest = shuffle(altri);
-        } else if (portieri.length === 1) {
-          keeper1 = portieri[0];
-          const altriShuffled = shuffle(altri);
-          keeper2 = altriShuffled[0];
-          rest = altriShuffled.slice(1);
-        } else {
-          const tutti = shuffle(selected);
-          keeper1 = tutti[0];
-          keeper2 = tutti[1];
-          rest = tutti.slice(2);
-        }
-        const restHalf = rest.length / 2;
-        const team1: TeamEntry[] = [
-          { playerId: keeper1.id, name: keeper1.name, isGoalkeeper: true, team: 1 },
-          ...rest.slice(0, restHalf).map((p) => ({ playerId: p.id, name: p.name, isGoalkeeper: false, team: 1 })),
-        ];
-        const team2: TeamEntry[] = [
-          { playerId: keeper2.id, name: keeper2.name, isGoalkeeper: true, team: 2 },
-          ...rest.slice(restHalf).map((p) => ({ playerId: p.id, name: p.name, isGoalkeeper: false, team: 2 })),
-        ];
-        setTeams({ team1, team2 });
-      }
-
+      const withScore: PlayerWithScore[] = selected.map((p) => ({
+        playerId: p.id,
+        name: p.name,
+        isGoalkeeper: p.isGoalkeeper,
+        score: getScoreForPlayer(p),
+      }));
+      const { team1: t1, team2: t2 } = distributeByScore(withScore, !noGoalkeepers);
+      const team1: TeamEntry[] = t1.map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        isGoalkeeper: p.isGoalkeeper,
+        team: 1,
+        score: p.score,
+      }));
+      const team2: TeamEntry[] = t2.map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        isGoalkeeper: p.isGoalkeeper,
+        team: 2,
+        score: p.score,
+      }));
+      setTeams({ team1, team2 });
       setGenerating(false);
-    }, 1800);
+    }, 1200);
   };
 
   const buildTeamsFromManual = (): { team1: TeamEntry[]; team2: TeamEntry[] } | null => {
@@ -143,14 +174,44 @@ export default function PartitaPage() {
         name: p.name,
         isGoalkeeper: p.isGoalkeeper,
         team: 1,
+        score: getScoreForPlayer(p),
       })),
       team2: team2Entries.map((p) => ({
         playerId: p.id,
         name: p.name,
         isGoalkeeper: p.isGoalkeeper,
         team: 2,
+        score: getScoreForPlayer(p),
       })),
     };
+  };
+
+  const movePlayerBetweenTeams = (playerId: string, fromTeam: 1 | 2, toTeam: 1 | 2) => {
+    if (!teams || fromTeam === toTeam) return;
+    const team1 = fromTeam === 1 ? teams.team1 : teams.team2;
+    const team2 = fromTeam === 1 ? teams.team2 : teams.team1;
+    const entry = team1.find((e) => e.playerId === playerId);
+    if (!entry) return;
+    const otherTeam = fromTeam === 1 ? teams.team2 : teams.team1;
+    const closest = otherTeam.reduce((best, p) => {
+      const diff = Math.abs(p.score - entry.score);
+      return !best || diff < Math.abs(best.score - entry.score) ? p : best;
+    }, null as TeamEntry | null);
+    if (!closest) return;
+    const newTeam1 =
+      fromTeam === 1
+        ? [...team1.filter((e) => e.playerId !== playerId), { ...closest, team: 1 as const }]
+        : [...team2.filter((e) => e.playerId !== closest.playerId), { ...entry, team: 1 as const }];
+    const newTeam2 =
+      fromTeam === 2
+        ? [...team2.filter((e) => e.playerId !== playerId), { ...closest, team: 2 as const }]
+        : [...team1.filter((e) => e.playerId !== closest.playerId), { ...entry, team: 2 as const }];
+    setTeams(
+      fromTeam === 1
+        ? { team1: newTeam1, team2: newTeam2 }
+        : { team1: newTeam2, team2: newTeam1 }
+    );
+    setDragged(null);
   };
 
   const saveMatch = async (customTeams?: { team1: TeamEntry[]; team2: TeamEntry[] } | null) => {
@@ -312,11 +373,11 @@ export default function PartitaPage() {
           {mode === "sorteggia" && !teams && !generating && (
             <button
               type="button"
-              onClick={generateTeams}
+              onClick={suggestTeams}
               disabled={!canGenerate}
               className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition mb-6"
             >
-              Genera squadre
+              Suggerisci squadre
             </button>
           )}
 
@@ -393,35 +454,60 @@ export default function PartitaPage() {
 
           {teams && !generating && (
             <div className="space-y-6">
+              <p className="text-sport-white/80 text-sm text-center">
+                Trascina un giocatore nell’altra squadra per scambiarlo (le squadre restano bilanciate).
+              </p>
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4">
-                  <h3 className="font-display font-bold text-sport-orange text-center mb-3 text-lg">
+                <div
+                  className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => dragged && movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 1)}
+                >
+                  <h3 className="font-display font-bold text-sport-orange text-center mb-1 text-lg">
                     Squadra 1
                   </h3>
+                  <p className="text-center text-sport-white/90 font-display font-semibold text-sm mb-3">
+                    Score: {teamScoreSum(teams.team1)}
+                  </p>
                   <ul className="space-y-2">
                     {teams.team1.map((t) => (
                       <li
                         key={t.playerId}
-                        className="flex items-center gap-2 text-sport-white font-body"
+                        draggable
+                        onDragStart={() => setDragged({ playerId: t.playerId, fromTeam: 1 })}
+                        onDragEnd={() => setDragged(null)}
+                        className="flex items-center gap-2 text-sport-white font-body cursor-grab active:cursor-grabbing touch-target min-h-[44px] px-2 py-1.5 rounded-lg bg-sport-white/10 border border-transparent hover:border-sport-orange/50"
                       >
                         {t.isGoalkeeper && <span>🧤</span>}
-                        <span className="truncate">{t.name}</span>
+                        <span className="truncate flex-1">{t.name}</span>
+                        <span className="text-sport-orange font-display font-semibold text-xs">{t.score}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4">
-                  <h3 className="font-display font-bold text-sport-gold text-center mb-3 text-lg">
+                <div
+                  className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => dragged && movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 2)}
+                >
+                  <h3 className="font-display font-bold text-sport-gold text-center mb-1 text-lg">
                     Squadra 2
                   </h3>
+                  <p className="text-center text-sport-white/90 font-display font-semibold text-sm mb-3">
+                    Score: {teamScoreSum(teams.team2)}
+                  </p>
                   <ul className="space-y-2">
                     {teams.team2.map((t) => (
                       <li
                         key={t.playerId}
-                        className="flex items-center gap-2 text-sport-white font-body"
+                        draggable
+                        onDragStart={() => setDragged({ playerId: t.playerId, fromTeam: 2 })}
+                        onDragEnd={() => setDragged(null)}
+                        className="flex items-center gap-2 text-sport-white font-body cursor-grab active:cursor-grabbing touch-target min-h-[44px] px-2 py-1.5 rounded-lg bg-sport-white/10 border border-transparent hover:border-sport-gold/50"
                       >
                         {t.isGoalkeeper && <span>🧤</span>}
-                        <span className="truncate">{t.name}</span>
+                        <span className="truncate flex-1">{t.name}</span>
+                        <span className="text-sport-gold font-display font-semibold text-xs">{t.score}</span>
                       </li>
                     ))}
                   </ul>

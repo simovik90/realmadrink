@@ -18,11 +18,22 @@ export async function GET(
   }
 }
 
+const EXPECTED_PASSWORD =
+  process.env.REALMADRINK_DELETE_PASSWORD ?? "Realmadrink";
+
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const password = typeof body.password === "string" ? body.password.trim() : "";
+    if (password !== EXPECTED_PASSWORD) {
+      return NextResponse.json(
+        { error: "Password errata" },
+        { status: 401 }
+      );
+    }
     const { matchId } = await params;
     await prisma.match.delete({ where: { id: matchId } });
     return NextResponse.json({ ok: true });

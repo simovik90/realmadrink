@@ -67,10 +67,19 @@ export default function StoricoPage() {
 
   const deleteMatch = async (matchId: string) => {
     if (!confirm("Eliminare questa partita? I goal assegnati non conteranno più in classifica.")) return;
+    const password = prompt("Inserisci la password RealMadrink per confermare:");
+    if (password === null) return;
     try {
-      const res = await fetch(`/api/matches/${matchId}`, { method: "DELETE" });
+      const res = await fetch(`/api/matches/${matchId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
       if (res.ok) setMatches((prev) => prev.filter((m) => m.id !== matchId));
-      else alert("Errore durante l'eliminazione.");
+      else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error === "Password errata" ? "Password errata." : "Errore durante l'eliminazione.");
+      }
     } catch {
       alert("Errore di rete.");
     }

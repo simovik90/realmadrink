@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type ClassificaEntry = { playerId: string; name: string; goals: number; presenze: number };
+type ClassificaEntry = { playerId: string; name: string; goals: number; presenze: number; score: number };
 
 export default function ClassificaPage() {
   const [list, setList] = useState<ClassificaEntry[]>([]);
@@ -15,8 +15,8 @@ export default function ClassificaPage() {
     fetch("/api/classifica")
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => {
-        if (ok && Array.isArray(data)) {
-          setList(data);
+        if (ok && data && Array.isArray(data.list)) {
+          setList(data.list);
         } else if (!ok && data && typeof data.error === "string") {
           setError(data.detail || data.error);
           setList([]);
@@ -60,9 +60,10 @@ export default function ClassificaPage() {
         <div className="rounded-2xl bg-sport-white/10 border border-sport-white/20 overflow-hidden">
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-sport-white/20 font-display font-semibold text-sport-white text-sm">
             <span className="col-span-1 text-center">#</span>
-            <span className="col-span-6">Giocatore</span>
+            <span className="col-span-4">Giocatore</span>
             <span className="col-span-2 text-center">Goal</span>
-            <span className="col-span-3 text-center">Presenze</span>
+            <span className="col-span-2 text-center">Pres.</span>
+            <span className="col-span-3 text-center">Score</span>
           </div>
           <ul className="divide-y divide-sport-white/10">
             {list.map((entry, i) => (
@@ -73,9 +74,12 @@ export default function ClassificaPage() {
                 <span className="col-span-1 text-center font-display font-bold text-sport-orange">
                   {i + 1}
                 </span>
-                <span className="col-span-6 truncate">{entry.name}</span>
+                <span className="col-span-4 truncate">{entry.name}</span>
                 <span className="col-span-2 text-center font-display font-semibold">{entry.goals}</span>
-                <span className="col-span-3 text-center text-sport-white/90">{entry.presenze}</span>
+                <span className="col-span-2 text-center text-sport-white/90">{entry.presenze}</span>
+                <span className="col-span-3 text-center font-display font-bold text-sport-orange">
+                  {entry.score}
+                </span>
               </li>
             ))}
           </ul>
