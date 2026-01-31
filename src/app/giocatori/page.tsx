@@ -26,6 +26,7 @@ export default function GiocatoriPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     fetch("/api/players")
@@ -36,6 +37,30 @@ export default function GiocatoriPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const startEditing = (p: Player) => {
+    setEditingPlayer(p);
+    setName(p.name);
+    setIsGoalkeeper(p.isGoalkeeper);
+    setAge(p.age != null ? String(p.age) : "");
+    setPracticesSport(p.practicesSport ?? false);
+    setSportTimesPerWeek(p.sportTimesPerWeek != null ? String(p.sportTimesPerWeek) : "");
+    setHasPlayedFootball(p.hasPlayedFootball ?? false);
+    setFootballYearsAgo(p.footballYearsAgo != null ? String(p.footballYearsAgo) : "");
+    setError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingPlayer(null);
+    setName("");
+    setIsGoalkeeper(false);
+    setAge("");
+    setPracticesSport(false);
+    setSportTimesPerWeek("");
+    setHasPlayedFootball(false);
+    setFootballYearsAgo("");
+    setError(null);
+  };
+
   const addPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
@@ -43,32 +68,45 @@ export default function GiocatoriPage() {
     setError(null);
     setSaving(true);
     try {
-      const res = await fetch("/api/players", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmed,
-          isGoalkeeper,
-          age: age.trim() ? parseInt(age, 10) : null,
-          practicesSport,
-          sportTimesPerWeek: sportTimesPerWeek.trim() ? parseInt(sportTimesPerWeek, 10) : null,
-          hasPlayedFootball,
-          footballYearsAgo: footballYearsAgo.trim() ? parseInt(footballYearsAgo, 10) : null,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setPlayers((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-        setName("");
-        setIsGoalkeeper(false);
-        setAge("");
-        setPracticesSport(false);
-        setSportTimesPerWeek("");
-        setHasPlayedFootball(false);
-        setFootballYearsAgo("");
+      const payload = {
+        name: trimmed,
+        isGoalkeeper,
+        age: age.trim() ? parseInt(age, 10) : null,
+        practicesSport,
+        sportTimesPerWeek: sportTimesPerWeek.trim() ? parseInt(sportTimesPerWeek, 10) : null,
+        hasPlayedFootball,
+        footballYearsAgo: footballYearsAgo.trim() ? parseInt(footballYearsAgo, 10) : null,
+      };
+      if (editingPlayer) {
+        const res = await fetch(`/api/players/${editingPlayer.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setPlayers((prev) =>
+            prev.map((x) => (x.id === editingPlayer.id ? { ...x, ...data } : x)).sort((a, b) => a.name.localeCompare(b.name))
+          );
+          cancelEditing();
+        } else {
+          const msg = data?.detail || data?.error || "Errore aggiornamento";
+          setError(msg);
+        }
       } else {
-        const msg = data?.detail || data?.error || "Errore di connessione. Hai avviato il database? In terminale: npx prisma db push";
-        setError(msg);
+        const res = await fetch("/api/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setPlayers((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+          cancelEditing();
+        } else {
+          const msg = data?.detail || data?.error || "Errore di connessione. Hai avviato il database? In terminale: npx prisma db push";
+          setError(msg);
+        }
       }
     } catch {
       setError("Errore di rete. Controlla che il server sia avviato e che il database esista (npx prisma db push).");
@@ -120,7 +158,9 @@ export default function GiocatoriPage() {
       </header>
 
       <section className="mb-8">
-        <h2 className="font-display font-semibold text-sport-white text-lg mb-3">Aggiungi giocatore</h2>
+        <h2 className="font-display font-semibold text-sport-white text-lg mb-3">
+          {editingPlayer ? `Modifica: ${editingPlayer.name}` : "Aggiungi giocatore"}
+        </h2>
         <form onSubmit={addPlayer}>
           <div className="flex gap-2 mb-3">
             <input
@@ -136,8 +176,17 @@ export default function GiocatoriPage() {
               disabled={!name.trim() || saving}
               className="touch-target min-h-[48px] px-5 rounded-xl bg-sport-orange text-white font-display font-semibold disabled:opacity-50 active:scale-95 transition"
             >
-              Aggiungi
+              {editingPlayer ? "Salva" : "Aggiungi"}
             </button>
+            {editingPlayer && (
+              <button
+                type="button"
+                onClick={cancelEditing}
+                className="touch-target min-h-[48px] px-4 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold border border-sport-white/30 active:scale-95 transition"
+              >
+                Annulla
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <label className="text-sport-white font-body text-sm">
@@ -217,7 +266,7 @@ export default function GiocatoriPage() {
       <section>
         <h2 className="font-display font-semibold text-sport-white text-lg mb-1">Gestisci giocatori</h2>
         <p className="text-sport-white/80 text-sm mb-4">
-          Seleziona chi può fare il portiere: tocca il pallino accanto al nome.
+          Tocca <strong>Modifica</strong> per cambiare nome e dati, o il pallino per segnare il portiere.
         </p>
         {loading ? (
           <p className="text-sport-white/80">Caricamento...</p>
@@ -238,6 +287,15 @@ export default function GiocatoriPage() {
                     </span>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => startEditing(p)}
+                  disabled={editingPlayer?.id === p.id}
+                  className="flex-shrink-0 min-h-[44px] px-3 rounded-lg font-display font-semibold text-sm bg-sport-white/25 text-sport-white border border-sport-white/30 transition active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+                  title="Modifica giocatore"
+                >
+                  Modifica
+                </button>
                 <button
                   type="button"
                   onClick={() => toggleGoalkeeper(p)}
