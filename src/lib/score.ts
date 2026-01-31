@@ -10,7 +10,6 @@
 const W1 = 0.6;
 const W2 = 0.25;
 const W3 = 0.15;
-const MIN_GAMES_FOR_STATS = 3; // sotto questa soglia = giocatore nuovo (usa medie gruppo)
 const AGE_PEAK = 28; // età di picco per la curva
 const NEUTRAL = 50; // valore neutro 0-100 quando mancano dati
 
@@ -70,25 +69,23 @@ function footballToScore(hasPlayed: boolean | null, yearsAgo: number | null): nu
 
 /**
  * Goal factor 0-100: performance (goal/partita normalizzata al gruppo).
- * Giocatore nuovo (presenze < MIN): = media gruppo (50 in scala normalizzata).
- * Mai penalizzante per assenza dati.
+ * I goal contano dalla prima partita. Solo senza presenze = neutro (50).
  */
 export function goalFactor(
   goals: number,
   presenze: number,
   groupAvgGoalsPerGame: number
 ): number {
-  if (presenze < MIN_GAMES_FOR_STATS) return NEUTRAL;
   if (presenze === 0) return NEUTRAL;
   const goalsPerGame = goals / presenze;
-  if (groupAvgGoalsPerGame <= 0) return Math.min(100, goalsPerGame * 20);
+  if (groupAvgGoalsPerGame <= 0) return Math.min(100, Math.round(goalsPerGame * 20));
   const ratio = goalsPerGame / groupAvgGoalsPerGame;
   return Math.min(100, Math.max(0, Math.round(50 + (ratio - 1) * 50)));
 }
 
 /**
  * Attendance factor 0-100: presenze / partite totali.
- * Giocatore nuovo: = media gruppo.
+ * Dalla prima partita usiamo il dato reale; senza presenze = media gruppo.
  */
 export function attendanceFactor(
   presenze: number,
@@ -96,7 +93,7 @@ export function attendanceFactor(
   groupAvgAttendance: number
 ): number {
   if (totalMatches <= 0) return groupAvgAttendance;
-  if (presenze < MIN_GAMES_FOR_STATS) return groupAvgAttendance;
+  if (presenze === 0) return groupAvgAttendance;
   return Math.min(100, Math.round((presenze / totalMatches) * 100));
 }
 
