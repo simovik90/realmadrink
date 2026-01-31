@@ -150,6 +150,10 @@ export type PlayerWithScore = {
   score: number;
 };
 
+/**
+ * Distribuzione a serpente: 1°->squadra1, 2°->squadra2, 3°->squadra2, 4°->squadra1, ...
+ * Così la somma degli score delle due squadre è la più simile possibile.
+ */
 export function distributeByScore(
   players: PlayerWithScore[],
   withGoalkeepers: boolean
@@ -174,9 +178,16 @@ export function distributeByScore(
       keeper2 = altri[1];
       rest = altri.slice(2);
     }
-    const restHalf = rest.length / 2;
-    const team1: PlayerWithScore[] = [keeper1, ...rest.slice(0, restHalf)];
-    const team2: PlayerWithScore[] = [keeper2, ...rest.slice(restHalf)];
+    // Assegna il resto a serpente (1-2-2-1-1-2-2-1...) per bilanciare gli score
+    const team1: PlayerWithScore[] = [keeper1];
+    const team2: PlayerWithScore[] = [keeper2];
+    for (let i = 0; i < rest.length; i++) {
+      if (i % 4 === 0 || i % 4 === 3) {
+        team1.push(rest[i]);
+      } else {
+        team2.push(rest[i]);
+      }
+    }
     return { team1, team2 };
   }
   const half = sorted.length / 2;

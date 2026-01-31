@@ -188,28 +188,25 @@ export default function PartitaPage() {
 
   const movePlayerBetweenTeams = (playerId: string, fromTeam: 1 | 2, toTeam: 1 | 2) => {
     if (!teams || fromTeam === toTeam) return;
-    const team1 = fromTeam === 1 ? teams.team1 : teams.team2;
-    const team2 = fromTeam === 1 ? teams.team2 : teams.team1;
-    const entry = team1.find((e) => e.playerId === playerId);
-    if (!entry) return;
-    const otherTeam = fromTeam === 1 ? teams.team2 : teams.team1;
-    const closest = otherTeam.reduce((best, p) => {
-      const diff = Math.abs(p.score - entry.score);
-      return !best || diff < Math.abs(best.score - entry.score) ? p : best;
+    const sourceTeam = fromTeam === 1 ? teams.team1 : teams.team2;
+    const targetTeam = fromTeam === 1 ? teams.team2 : teams.team1;
+    const movedEntry = sourceTeam.find((e) => e.playerId === playerId);
+    if (!movedEntry) return;
+    const swapPartner = targetTeam.reduce((best, p) => {
+      const diff = Math.abs(p.score - movedEntry.score);
+      return !best || diff < Math.abs(best.score - movedEntry.score) ? p : best;
     }, null as TeamEntry | null);
-    if (!closest) return;
-    const newTeam1 =
-      fromTeam === 1
-        ? [...team1.filter((e) => e.playerId !== playerId), { ...closest, team: 1 as const }]
-        : [...team2.filter((e) => e.playerId !== closest.playerId), { ...entry, team: 1 as const }];
-    const newTeam2 =
-      fromTeam === 2
-        ? [...team2.filter((e) => e.playerId !== playerId), { ...closest, team: 2 as const }]
-        : [...team1.filter((e) => e.playerId !== closest.playerId), { ...entry, team: 2 as const }];
+    if (!swapPartner) return;
+    const newSourceTeam = sourceTeam
+      .filter((e) => e.playerId !== playerId)
+      .concat([{ ...swapPartner, team: fromTeam }]);
+    const newTargetTeam = targetTeam
+      .filter((e) => e.playerId !== swapPartner.playerId)
+      .concat([{ ...movedEntry, team: toTeam }]);
     setTeams(
       fromTeam === 1
-        ? { team1: newTeam1, team2: newTeam2 }
-        : { team1: newTeam2, team2: newTeam1 }
+        ? { team1: newSourceTeam, team2: newTargetTeam }
+        : { team1: newTargetTeam, team2: newSourceTeam }
     );
     setDragged(null);
   };
@@ -461,7 +458,11 @@ export default function PartitaPage() {
                 <div
                   className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4"
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dragged && movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 1)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dragged && dragged.fromTeam !== 1) movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 1);
+                  }}
                 >
                   <h3 className="font-display font-bold text-sport-orange text-center mb-1 text-lg">
                     Squadra 1
@@ -488,7 +489,11 @@ export default function PartitaPage() {
                 <div
                   className="rounded-2xl bg-sport-white/15 border-2 border-sport-white/30 p-4"
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dragged && movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 2)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dragged && dragged.fromTeam !== 2) movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 2);
+                  }}
                 >
                   <h3 className="font-display font-bold text-sport-gold text-center mb-1 text-lg">
                     Squadra 2
