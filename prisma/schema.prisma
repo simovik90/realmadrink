@@ -8,11 +8,16 @@ datasource db {
 }
 
 model Player {
-  id        String   @id @default(cuid())
-  name      String
-  isGoalkeeper Boolean @default(false)
-  createdAt DateTime @default(now())
-  matches   MatchPlayer[]
+  id                 String   @id @default(cuid())
+  name               String
+  isGoalkeeper       Boolean  @default(false)
+  age                Int?     // età in anni
+  practicesSport     Boolean? // pratica qualche sport
+  sportTimesPerWeek  Int?     // quante volte a settimana (0-7+)
+  hasPlayedFootball  Boolean? // ha già giocato a calcio
+  footballYearsAgo   Int?     // quanto tempo fa (anni)
+  createdAt          DateTime @default(now())
+  matches            MatchPlayer[]
 }
 
 model Match {

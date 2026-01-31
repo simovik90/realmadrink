@@ -3,12 +3,26 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Player = { id: string; name: string; isGoalkeeper: boolean };
+type Player = {
+  id: string;
+  name: string;
+  isGoalkeeper: boolean;
+  age: number | null;
+  practicesSport: boolean | null;
+  sportTimesPerWeek: number | null;
+  hasPlayedFootball: boolean | null;
+  footballYearsAgo: number | null;
+};
 
 export default function GiocatoriPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [name, setName] = useState("");
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
+  const [age, setAge] = useState<string>("");
+  const [practicesSport, setPracticesSport] = useState(false);
+  const [sportTimesPerWeek, setSportTimesPerWeek] = useState<string>("");
+  const [hasPlayedFootball, setHasPlayedFootball] = useState(false);
+  const [footballYearsAgo, setFootballYearsAgo] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,13 +46,26 @@ export default function GiocatoriPage() {
       const res = await fetch("/api/players", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed, isGoalkeeper }),
+        body: JSON.stringify({
+          name: trimmed,
+          isGoalkeeper,
+          age: age.trim() ? parseInt(age, 10) : null,
+          practicesSport,
+          sportTimesPerWeek: sportTimesPerWeek.trim() ? parseInt(sportTimesPerWeek, 10) : null,
+          hasPlayedFootball,
+          footballYearsAgo: footballYearsAgo.trim() ? parseInt(footballYearsAgo, 10) : null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setPlayers((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
         setName("");
         setIsGoalkeeper(false);
+        setAge("");
+        setPracticesSport(false);
+        setSportTimesPerWeek("");
+        setHasPlayedFootball(false);
+        setFootballYearsAgo("");
       } else {
         const msg = data?.detail || data?.error || "Errore di connessione. Hai avviato il database? In terminale: npx prisma db push";
         setError(msg);
@@ -55,12 +82,12 @@ export default function GiocatoriPage() {
       const res = await fetch(`/api/players/${p.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isGoalkeeper: !p.isGoalkeeper }),
+        body: JSON.stringify({ isGoalkeeper: !p.isGoalkeeper } as Partial<Player>),
       });
       const data = await res.json();
       if (res.ok) {
         setPlayers((prev) =>
-          prev.map((x) => (x.id === p.id ? { ...x, isGoalkeeper: data.isGoalkeeper } : x))
+          prev.map((x) => (x.id === p.id ? { ...x, ...data } : x))
         );
       }
     } catch {}
@@ -112,6 +139,64 @@ export default function GiocatoriPage() {
               Aggiungi
             </button>
           </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <label className="text-sport-white font-body text-sm">
+              Età (anni)
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="—"
+                className="w-full touch-target min-h-[44px] mt-1 px-3 rounded-lg bg-sport-white/95 text-pitch-dark border-0"
+              />
+            </label>
+            <label className="text-sport-white font-body text-sm">
+              Sport (volte/settimana)
+              <input
+                type="number"
+                min={0}
+                max={14}
+                value={sportTimesPerWeek}
+                onChange={(e) => setSportTimesPerWeek(e.target.value)}
+                placeholder="0"
+                className="w-full touch-target min-h-[44px] mt-1 px-3 rounded-lg bg-sport-white/95 text-pitch-dark border-0"
+              />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer touch-target min-h-[44px] mb-2">
+            <input
+              type="checkbox"
+              checked={practicesSport}
+              onChange={(e) => setPracticesSport(e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
+            />
+            <span className="text-sport-white font-body">Pratica qualche sport</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer touch-target min-h-[44px] mb-2">
+            <input
+              type="checkbox"
+              checked={hasPlayedFootball}
+              onChange={(e) => setHasPlayedFootball(e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
+            />
+            <span className="text-sport-white font-body">Ha già giocato a calcio</span>
+          </label>
+          {hasPlayedFootball && (
+            <label className="text-sport-white font-body text-sm block mb-3">
+              Quanti anni fa?
+              <input
+                type="number"
+                min={0}
+                max={80}
+                value={footballYearsAgo}
+                onChange={(e) => setFootballYearsAgo(e.target.value)}
+                placeholder="0"
+                className="w-24 touch-target min-h-[40px] mt-1 ml-2 px-2 rounded-lg bg-sport-white/95 text-pitch-dark border-0"
+              />
+            </label>
+          )}
           <label className="flex items-center gap-2 cursor-pointer touch-target min-h-[44px]">
             <input
               type="checkbox"
@@ -145,7 +230,14 @@ export default function GiocatoriPage() {
                 key={p.id}
                 className="flex items-center gap-3 touch-target min-h-[56px] px-4 py-3 rounded-xl bg-sport-white/15 backdrop-blur border border-sport-white/20"
               >
-                <span className="flex-1 font-body text-sport-white text-lg truncate">{p.name}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-body text-sport-white text-lg truncate block">{p.name}</span>
+                  {(p.age != null || p.practicesSport || (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0) || p.hasPlayedFootball || (p.footballYearsAgo != null)) && (
+                    <span className="text-sport-white/70 text-sm">
+                      {[p.age != null && `${p.age} anni`, p.practicesSport && (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0 ? `sport ${p.sportTimesPerWeek}/sett` : "sport"), p.hasPlayedFootball && (p.footballYearsAgo != null ? `calcio ${p.footballYearsAgo} anni fa` : "calcio")].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => toggleGoalkeeper(p)}

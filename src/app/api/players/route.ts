@@ -15,15 +15,42 @@ export async function GET() {
   }
 }
 
+function parsePlayerBody(body: Record<string, unknown>) {
+  const name = body.name;
+  const isGoalkeeper = body.isGoalkeeper;
+  const age = body.age != null ? Number(body.age) : null;
+  const practicesSport = body.practicesSport != null ? Boolean(body.practicesSport) : null;
+  const sportTimesPerWeek = body.sportTimesPerWeek != null ? Number(body.sportTimesPerWeek) : null;
+  const hasPlayedFootball = body.hasPlayedFootball != null ? Boolean(body.hasPlayedFootball) : null;
+  const footballYearsAgo = body.footballYearsAgo != null ? Number(body.footballYearsAgo) : null;
+  return {
+    name: typeof name === "string" ? name.trim() : "",
+    isGoalkeeper: Boolean(isGoalkeeper),
+    age: Number.isInteger(age) && age! >= 0 ? age : null,
+    practicesSport,
+    sportTimesPerWeek: Number.isInteger(sportTimesPerWeek) && sportTimesPerWeek! >= 0 ? sportTimesPerWeek : null,
+    hasPlayedFootball,
+    footballYearsAgo: Number.isInteger(footballYearsAgo) && footballYearsAgo! >= 0 ? footballYearsAgo : null,
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, isGoalkeeper } = body;
-    if (!name || typeof name !== "string" || name.trim() === "") {
+    const data = parsePlayerBody(body as Record<string, unknown>);
+    if (!data.name) {
       return NextResponse.json({ error: "Nome obbligatorio" }, { status: 400 });
     }
     const player = await prisma.player.create({
-      data: { name: name.trim(), isGoalkeeper: Boolean(isGoalkeeper) },
+      data: {
+        name: data.name,
+        isGoalkeeper: data.isGoalkeeper,
+        age: data.age,
+        practicesSport: data.practicesSport,
+        sportTimesPerWeek: data.sportTimesPerWeek,
+        hasPlayedFootball: data.hasPlayedFootball,
+        footballYearsAgo: data.footballYearsAgo,
+      },
     });
     return NextResponse.json(player);
   } catch (e) {

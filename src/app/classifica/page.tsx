@@ -8,11 +8,23 @@ type ClassificaEntry = { playerId: string; name: string; goals: number; presenze
 export default function ClassificaPage() {
   const [list, setList] = useState<ClassificaEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     fetch("/api/classifica")
-      .then((r) => r.json())
-      .then((data) => setList(Array.isArray(data) ? data : []))
+      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && Array.isArray(data)) {
+          setList(data);
+        } else if (!ok && data && typeof data.error === "string") {
+          setError(data.detail || data.error);
+          setList([]);
+        } else {
+          setList([]);
+        }
+      })
+      .catch(() => setError("Errore di connessione"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -36,6 +48,10 @@ export default function ClassificaPage() {
 
       {loading ? (
         <p className="text-sport-white/80">Caricamento...</p>
+      ) : error ? (
+        <p className="text-red-200 bg-red-900/40 px-4 py-3 rounded-xl text-center">
+          {error}
+        </p>
       ) : list.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
           Nessun giocatore con partite. Gioca qualche partita e assegna i goal per vedere la classifica.
