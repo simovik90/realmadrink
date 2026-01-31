@@ -1,0 +1,154 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+type MatchPlayer = {
+  playerId: string;
+  player: { id: string; name: string };
+  team: number;
+  isGoalkeeper: boolean;
+  goals: number;
+  rating: number | null;
+  note: string | null;
+};
+type Match = {
+  id: string;
+  date: string;
+  concluded: boolean;
+  players: MatchPlayer[];
+};
+
+export default function PagellePage() {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/matches")
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setMatches(list.filter((m: Match) => m.concluded).sort((a: Match, b: Match) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("it-IT", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const byTeam = (m: Match) => {
+    const team1 = m.players.filter((p) => p.team === 1);
+    const team2 = m.players.filter((p) => p.team === 2);
+    return { team1, team2 };
+  };
+
+  return (
+    <main className="min-h-dvh px-4 py-6 safe-top safe-bottom max-w-lg mx-auto">
+      <div className="flex justify-center pt-4 pb-2 safe-top">
+        <Link href="/">
+          <img src="/logo.png" alt="RealMadrink" className="h-16 w-auto object-contain" />
+        </Link>
+      </div>
+      <header className="flex items-center justify-between mb-6">
+        <Link
+          href="/"
+          className="touch-target flex items-center justify-center w-10 h-10 rounded-full bg-sport-white/20 text-sport-white"
+        >
+          ←
+        </Link>
+        <h1 className="font-display font-bold text-2xl text-sport-white">Pagelle</h1>
+        <div className="w-10" />
+      </header>
+
+      {loading ? (
+        <p className="text-sport-white/80">Caricamento...</p>
+      ) : matches.length === 0 ? (
+        <p className="text-sport-white/80 text-center py-12">
+          Nessuna partita conclusa. Segna una partita come conclusa nello Storico partite per creare la pagella.
+        </p>
+      ) : (
+        <ul className="space-y-6">
+          {matches.map((m) => {
+            const { team1, team2 } = byTeam(m);
+            return (
+              <li
+                key={m.id}
+                className="rounded-2xl bg-sport-white/15 border border-sport-white/20 p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-display font-bold text-sport-white">
+                    {formatDate(m.date)}
+                  </p>
+                  <Link
+                    href={`/pagella/${m.id}`}
+                    className="touch-target min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm flex items-center justify-center active:scale-95 transition"
+                  >
+                    Modifica
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-display font-semibold text-sport-orange mb-2">Squadra 1</p>
+                    <ul className="space-y-1.5 text-sport-white/90">
+                      {team1.map((mp) => (
+                        <li key={mp.playerId} className="flex flex-col gap-0.5">
+                          <span className="font-body truncate flex items-center gap-1">
+                            {mp.isGoalkeeper && "🧤 "}
+                            {mp.player.name}
+                            {mp.goals > 0 && (
+                              <span className="text-sport-orange font-display font-semibold text-xs">
+                                {mp.goals}⚽
+                              </span>
+                            )}
+                          </span>
+                          {(mp.rating != null || (mp.note && mp.note.trim())) && (
+                            <span className="text-sport-white/70 text-xs pl-4">
+                              {mp.rating != null && <span className="font-display font-semibold text-sport-orange">{mp.rating}/10</span>}
+                              {mp.rating != null && mp.note?.trim() && " · "}
+                              {mp.note?.trim()}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-display font-semibold text-sport-gold mb-2">Squadra 2</p>
+                    <ul className="space-y-1.5 text-sport-white/90">
+                      {team2.map((mp) => (
+                        <li key={mp.playerId} className="flex flex-col gap-0.5">
+                          <span className="font-body truncate flex items-center gap-1">
+                            {mp.isGoalkeeper && "🧤 "}
+                            {mp.player.name}
+                            {mp.goals > 0 && (
+                              <span className="text-sport-gold font-display font-semibold text-xs">
+                                {mp.goals}⚽
+                              </span>
+                            )}
+                          </span>
+                          {(mp.rating != null || (mp.note && mp.note.trim())) && (
+                            <span className="text-sport-white/70 text-xs pl-4">
+                              {mp.rating != null && <span className="font-display font-semibold text-sport-gold">{mp.rating}/10</span>}
+                              {mp.rating != null && mp.note?.trim() && " · "}
+                              {mp.note?.trim()}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </main>
+  );
+}

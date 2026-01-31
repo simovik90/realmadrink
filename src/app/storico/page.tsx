@@ -174,6 +174,14 @@ export default function StoricoPage() {
                     Partita conclusa
                   </button>
                 )}
+                {m.concluded && (
+                  <Link
+                    href={`/pagella/${m.id}`}
+                    className="w-full touch-target min-h-[44px] mb-3 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold border border-sport-white/30 flex items-center justify-center active:scale-[0.98] transition"
+                  >
+                    Crea pagella
+                  </Link>
+                )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="font-display font-semibold text-sport-orange mb-1">Squadra 1</p>
