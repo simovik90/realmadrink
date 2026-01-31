@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import BallLoader from "@/components/BallLoader";
 import {
@@ -49,6 +49,8 @@ export default function PartitaPage() {
   const [manualTeam, setManualTeam] = useState<Record<string, 1 | 2>>({});
   const [classificaData, setClassificaData] = useState<ClassificaResponse | null>(null);
   const [dragged, setDragged] = useState<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
+  const draggedRef = useRef<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
+  const lastDropRef = useRef<number>(0);
 
   useEffect(() => {
     fetch("/api/players")
@@ -186,30 +188,47 @@ export default function PartitaPage() {
     };
   };
 
-  const movePlayerBetweenTeams = (playerId: string, fromTeam: 1 | 2, toTeam: 1 | 2) => {
-    if (!teams || fromTeam === toTeam) return;
-    const sourceTeam = fromTeam === 1 ? teams.team1 : teams.team2;
-    const targetTeam = fromTeam === 1 ? teams.team2 : teams.team1;
-    const movedEntry = sourceTeam.find((e) => e.playerId === playerId);
-    if (!movedEntry) return;
-    const swapPartner = targetTeam.reduce((best, p) => {
-      const diff = Math.abs(p.score - movedEntry.score);
-      return !best || diff < Math.abs(best.score - movedEntry.score) ? p : best;
-    }, null as TeamEntry | null);
-    if (!swapPartner) return;
-    const newSourceTeam = sourceTeam
-      .filter((e) => e.playerId !== playerId)
-      .concat([{ ...swapPartner, team: fromTeam }]);
-    const newTargetTeam = targetTeam
-      .filter((e) => e.playerId !== swapPartner.playerId)
-      .concat([{ ...movedEntry, team: toTeam }]);
-    setTeams(
-      fromTeam === 1
-        ? { team1: newSourceTeam, team2: newTargetTeam }
-        : { team1: newTargetTeam, team2: newSourceTeam }
-    );
-    setDragged(null);
-  };
+  const movePlayerBetweenTeams = useCallback(
+    (playerId: string, fromTeam: 1 | 2, toTeam: 1 | 2) => {
+      if (fromTeam === toTeam) return;
+      setTeams((prev) => {
+        if (!prev) return prev;
+        const sourceTeam = fromTeam === 1 ? prev.team1 : prev.team2;
+        const targetTeam = fromTeam === 1 ? prev.team2 : prev.team1;
+        const movedEntry = sourceTeam.find((e) => e.playerId === playerId);
+        if (!movedEntry) return prev;
+        const swapPartner = targetTeam.reduce((best, p) => {
+          const diff = Math.abs(p.score - movedEntry.score);
+          return !best || diff < Math.abs(best.score - movedEntry.score) ? p : best;
+        }, null as TeamEntry | null);
+        if (!swapPartner) return prev;
+        const newSourceTeam = sourceTeam
+          .filter((e) => e.playerId !== playerId)
+          .concat([{ ...swapPartner, team: fromTeam }]);
+        const newTargetTeam = targetTeam
+          .filter((e) => e.playerId !== swapPartner.playerId)
+          .concat([{ ...movedEntry, team: toTeam }]);
+        return fromTeam === 1
+          ? { team1: newSourceTeam, team2: newTargetTeam }
+          : { team1: newTargetTeam, team2: newSourceTeam };
+      });
+      setDragged(null);
+      draggedRef.current = null;
+    },
+    []
+  );
+
+  const handleDrop = useCallback(
+    (toTeam: 1 | 2) => {
+      const now = Date.now();
+      if (now - lastDropRef.current < 300) return;
+      lastDropRef.current = now;
+      const d = draggedRef.current ?? dragged;
+      if (!d || d.fromTeam === toTeam) return;
+      movePlayerBetweenTeams(d.playerId, d.fromTeam, toTeam);
+    },
+    [dragged, movePlayerBetweenTeams]
+  );
 
   const saveMatch = async (customTeams?: { team1: TeamEntry[]; team2: TeamEntry[] } | null) => {
     const teamsToSave = customTeams ?? teams;
@@ -461,7 +480,7 @@ export default function PartitaPage() {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (dragged && dragged.fromTeam !== 1) movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 1);
+                    handleDrop(1);
                   }}
                 >
                   <h3 className="font-display font-bold text-sport-orange text-center mb-1 text-lg">
@@ -475,8 +494,15 @@ export default function PartitaPage() {
                       <li
                         key={t.playerId}
                         draggable
-                        onDragStart={() => setDragged({ playerId: t.playerId, fromTeam: 1 })}
-                        onDragEnd={() => setDragged(null)}
+                        onDragStart={() => {
+                          const payload = { playerId: t.playerId, fromTeam: 1 as const };
+                          setDragged(payload);
+                          draggedRef.current = payload;
+                        }}
+                        onDragEnd={() => {
+                          setDragged(null);
+                          draggedRef.current = null;
+                        }}
                         className="flex items-center gap-2 text-sport-white font-body cursor-grab active:cursor-grabbing touch-target min-h-[44px] px-2 py-1.5 rounded-lg bg-sport-white/10 border border-transparent hover:border-sport-orange/50"
                       >
                         {t.isGoalkeeper && <span>🧤</span>}
@@ -492,7 +518,7 @@ export default function PartitaPage() {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (dragged && dragged.fromTeam !== 2) movePlayerBetweenTeams(dragged.playerId, dragged.fromTeam, 2);
+                    handleDrop(2);
                   }}
                 >
                   <h3 className="font-display font-bold text-sport-gold text-center mb-1 text-lg">
@@ -506,8 +532,15 @@ export default function PartitaPage() {
                       <li
                         key={t.playerId}
                         draggable
-                        onDragStart={() => setDragged({ playerId: t.playerId, fromTeam: 2 })}
-                        onDragEnd={() => setDragged(null)}
+                        onDragStart={() => {
+                          const payload = { playerId: t.playerId, fromTeam: 2 as const };
+                          setDragged(payload);
+                          draggedRef.current = payload;
+                        }}
+                        onDragEnd={() => {
+                          setDragged(null);
+                          draggedRef.current = null;
+                        }}
                         className="flex items-center gap-2 text-sport-white font-body cursor-grab active:cursor-grabbing touch-target min-h-[44px] px-2 py-1.5 rounded-lg bg-sport-white/10 border border-transparent hover:border-sport-gold/50"
                       >
                         {t.isGoalkeeper && <span>🧤</span>}
