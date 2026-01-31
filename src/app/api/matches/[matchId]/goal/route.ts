@@ -12,6 +12,19 @@ export async function PATCH(
     if (!playerId) {
       return NextResponse.json({ error: "playerId obbligatorio" }, { status: 400 });
     }
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { concluded: true },
+    });
+    if (!match) {
+      return NextResponse.json({ error: "Partita non trovata" }, { status: 404 });
+    }
+    if (match.concluded) {
+      return NextResponse.json(
+        { error: "Partita conclusa: non si possono più segnare goal." },
+        { status: 403 }
+      );
+    }
     const mp = await prisma.matchPlayer.findUnique({
       where: {
         matchId_playerId: { matchId, playerId },

@@ -13,6 +13,7 @@ type MatchPlayer = {
 type Match = {
   id: string;
   date: string;
+  concluded?: boolean;
   players: MatchPlayer[];
 };
 
@@ -63,6 +64,26 @@ export default function StoricoPage() {
         );
       }
     } catch {}
+  };
+
+  const markConcluded = async (matchId: string) => {
+    try {
+      const res = await fetch(`/api/matches/${matchId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ concluded: true }),
+      });
+      if (res.ok) {
+        setMatches((prev) =>
+          prev.map((m) => (m.id === matchId ? { ...m, concluded: true } : m))
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || "Errore.");
+      }
+    } catch {
+      alert("Errore di rete.");
+    }
   };
 
   const deleteMatch = async (matchId: string) => {
@@ -119,9 +140,16 @@ export default function StoricoPage() {
                 className="rounded-2xl bg-sport-white/15 border border-sport-white/20 p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-display font-bold text-sport-white">
-                    {formatDate(m.date)}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-display font-bold text-sport-white">
+                      {formatDate(m.date)}
+                    </p>
+                    {m.concluded && (
+                      <span className="px-2 py-0.5 rounded-full bg-sport-white/25 text-sport-white text-xs font-display font-semibold">
+                        Conclusa
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => deleteMatch(m.id)}
@@ -132,9 +160,20 @@ export default function StoricoPage() {
                     🗑️
                   </button>
                 </div>
-                <p className="text-sport-white/70 text-xs mb-2">
-                  Tocca ⚽ per aggiungere un goal
-                </p>
+                {!m.concluded && (
+                  <p className="text-sport-white/70 text-xs mb-2">
+                    Tocca ⚽ per aggiungere un goal
+                  </p>
+                )}
+                {!m.concluded && (
+                  <button
+                    type="button"
+                    onClick={() => markConcluded(m.id)}
+                    className="w-full touch-target min-h-[44px] mb-3 rounded-xl bg-sport-orange text-white font-display font-semibold active:scale-[0.98] transition"
+                  >
+                    Partita conclusa
+                  </button>
+                )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="font-display font-semibold text-sport-orange mb-1">Squadra 1</p>
@@ -147,15 +186,21 @@ export default function StoricoPage() {
                               {mp.goals}
                             </span>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => addGoal(m.id, mp.playerId)}
-                            className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
-                            title="Aggiungi goal"
-                            aria-label="Aggiungi goal"
-                          >
-                            ⚽
-                          </button>
+                          {!m.concluded ? (
+                            <button
+                              type="button"
+                              onClick={() => addGoal(m.id, mp.playerId)}
+                              className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
+                              title="Aggiungi goal"
+                              aria-label="Aggiungi goal"
+                            >
+                              ⚽
+                            </button>
+                          ) : (
+                            <span className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/10 text-sport-white/50" aria-hidden>
+                              ⚽
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -171,15 +216,21 @@ export default function StoricoPage() {
                               {mp.goals}
                             </span>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => addGoal(m.id, mp.playerId)}
-                            className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
-                            title="Aggiungi goal"
-                            aria-label="Aggiungi goal"
-                          >
-                            ⚽
-                          </button>
+                          {!m.concluded ? (
+                            <button
+                              type="button"
+                              onClick={() => addGoal(m.id, mp.playerId)}
+                              className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
+                              title="Aggiungi goal"
+                              aria-label="Aggiungi goal"
+                            >
+                              ⚽
+                            </button>
+                          ) : (
+                            <span className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/10 text-sport-white/50" aria-hidden>
+                              ⚽
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>

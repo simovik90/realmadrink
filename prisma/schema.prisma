@@ -23,6 +23,7 @@ model Player {
 model Match {
   id        String   @id @default(cuid())
   date      DateTime
+  concluded Boolean  @default(false)
   createdAt DateTime @default(now())
   players   MatchPlayer[]
 }

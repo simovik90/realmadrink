@@ -18,6 +18,31 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ matchId: string }> }
+) {
+  try {
+    const { matchId } = await params;
+    const body = await request.json().catch(() => ({}));
+    const concluded = body.concluded;
+    if (concluded !== true) {
+      return NextResponse.json(
+        { error: "Invia { concluded: true } per segnare la partita come conclusa" },
+        { status: 400 }
+      );
+    }
+    const match = await prisma.match.update({
+      where: { id: matchId },
+      data: { concluded: true },
+      include: { players: { include: { player: true } } },
+    });
+    return NextResponse.json(match);
+  } catch (e) {
+    return NextResponse.json({ error: "Errore aggiornamento partita" }, { status: 500 });
+  }
+}
+
 const EXPECTED_PASSWORD =
   process.env.REALMADRINK_DELETE_PASSWORD ?? "Realmadrink";
 
