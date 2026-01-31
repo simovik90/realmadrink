@@ -197,17 +197,8 @@ export default function PartitaPage() {
         const targetTeam = fromTeam === 1 ? prev.team2 : prev.team1;
         const movedEntry = sourceTeam.find((e) => e.playerId === playerId);
         if (!movedEntry) return prev;
-        const swapPartner = targetTeam.reduce((best, p) => {
-          const diff = Math.abs(p.score - movedEntry.score);
-          return !best || diff < Math.abs(best.score - movedEntry.score) ? p : best;
-        }, null as TeamEntry | null);
-        if (!swapPartner) return prev;
-        const newSourceTeam = sourceTeam
-          .filter((e) => e.playerId !== playerId)
-          .concat([{ ...swapPartner, team: fromTeam }]);
-        const newTargetTeam = targetTeam
-          .filter((e) => e.playerId !== swapPartner.playerId)
-          .concat([{ ...movedEntry, team: toTeam }]);
+        const newSourceTeam = sourceTeam.filter((e) => e.playerId !== playerId);
+        const newTargetTeam = targetTeam.concat([{ ...movedEntry, team: toTeam }]);
         return fromTeam === 1
           ? { team1: newSourceTeam, team2: newTargetTeam }
           : { team1: newTargetTeam, team2: newSourceTeam };
@@ -471,7 +462,7 @@ export default function PartitaPage() {
           {teams && !generating && (
             <div className="space-y-6">
               <p className="text-sport-white/80 text-sm text-center">
-                Trascina un giocatore nell’altra squadra per scambiarlo (le squadre restano bilanciate).
+                Trascina un giocatore nell’altra squadra. Poi sposta un altro giocatore per riequilibrare.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div
