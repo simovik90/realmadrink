@@ -207,7 +207,7 @@ export default function PagellaMatchPage() {
       <header className="flex items-center justify-between mb-6">
         <Link
           href="/storico"
-          className="touch-target flex items-center justify-center w-10 h-10 rounded-full bg-sport-white/20 text-sport-white"
+          className="touch-target flex items-center justify-center w-10 h-10 rounded-full bg-sport-white/20 text-sport-white hover:bg-sport-white/30 transition"
         >
           ←
         </Link>
@@ -215,113 +215,143 @@ export default function PagellaMatchPage() {
         <div className="w-10" />
       </header>
 
-      <p className="font-display font-semibold text-sport-white mb-4">
-        {formatDate(match.date)}
-      </p>
-      <p className="text-sport-white/70 text-sm mb-4">
-        Voto da 1 a 10 e nota opzionale per ogni giocatore.
-      </p>
-
-      {error && (
-        <p className="mb-4 text-red-200 bg-red-900/40 px-4 py-2 rounded-xl text-sm">{error}</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="rounded-2xl bg-sport-white/15 border border-sport-white/20 p-4">
-          <p className="font-display font-semibold text-sport-orange mb-3">Squadra 1</p>
-          <ul className="space-y-3">
-            {team1.map((mp) => (
-              <li key={mp.playerId} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  {mp.isGoalkeeper && <span>🧤</span>}
-                  <span className="text-sport-white font-body truncate">{mp.player.name}</span>
-                  {mp.goals > 0 && (
-                    <span className="text-sport-orange font-display font-semibold text-sm">
-                      {mp.goals}⚽
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={ratings[mp.playerId]?.rating ?? ""}
-                    onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
-                    className="flex-1 min-h-[40px] px-2 rounded-lg bg-sport-white/95 text-pitch-dark font-body text-sm border-0"
-                  >
-                    <option value="">—</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Nota"
-                    value={ratings[mp.playerId]?.note ?? ""}
-                    onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
-                    className="flex-[2] min-h-[40px] px-2 rounded-lg bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50"
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="rounded-2xl bg-sport-white/15 border border-sport-white/20 p-4">
-          <p className="font-display font-semibold text-sport-gold mb-3">Squadra 2</p>
-          <ul className="space-y-3">
-            {team2.map((mp) => (
-              <li key={mp.playerId} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  {mp.isGoalkeeper && <span>🧤</span>}
-                  <span className="text-sport-white font-body truncate">{mp.player.name}</span>
-                  {mp.goals > 0 && (
-                    <span className="text-sport-gold font-display font-semibold text-sm">
-                      {mp.goals}⚽
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={ratings[mp.playerId]?.rating ?? ""}
-                    onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
-                    className="flex-1 min-h-[40px] px-2 rounded-lg bg-sport-white/95 text-pitch-dark font-body text-sm border-0"
-                  >
-                    <option value="">—</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Nota"
-                    value={ratings[mp.playerId]?.note ?? ""}
-                    onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
-                    className="flex-[2] min-h-[40px] px-2 rounded-lg bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50"
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <div className="mb-6">
+        <p className="inline-block px-4 py-2 rounded-full bg-sport-white/15 text-sport-white font-display font-semibold text-sm">
+          {formatDate(match.date)}
+        </p>
+        <p className="mt-2 text-sport-white/60 text-sm">
+          Assegna un voto da 1 a 10 e, se vuoi, una nota per ogni giocatore.
+        </p>
       </div>
 
-      <button
-        type="button"
-        onClick={savePagella}
-        disabled={saving}
-        className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition"
-      >
-        {saving ? "Salvataggio..." : "Salva pagella"}
-      </button>
+      {error && (
+        <p className="mb-4 text-red-200 bg-red-900/40 px-4 py-3 rounded-xl text-sm border border-red-400/30">
+          {error}
+        </p>
+      )}
 
-      <Link
-        href="/pagelle"
-        className="mt-4 inline-block w-full text-center touch-target min-h-[48px] flex items-center justify-center rounded-xl bg-sport-white/20 text-sport-white font-display font-semibold"
-      >
-        Vedi tutte le pagelle
-      </Link>
+      <div className="space-y-6 mb-8">
+        {/* Squadra 1 */}
+        <section className="rounded-2xl bg-sport-white/10 backdrop-blur-sm border border-sport-white/20 overflow-hidden shadow-lg">
+          <div className="px-4 py-3 bg-sport-orange/20 border-b border-sport-white/15">
+            <h2 className="font-display font-bold text-lg text-sport-orange">Squadra 1</h2>
+          </div>
+          <ul className="divide-y divide-sport-white/10">
+            {team1.map((mp) => (
+              <li key={mp.playerId} className="px-4 py-4">
+                <div className="flex items-center gap-2 mb-2">
+                  {mp.isGoalkeeper && (
+                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title="Portiere">
+                      🧤
+                    </span>
+                  )}
+                  <span className="font-body font-medium text-sport-white truncate flex-1">
+                    {mp.player.name}
+                  </span>
+                  {mp.goals > 0 && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-sport-orange/25 text-sport-orange font-display font-semibold text-xs">
+                      {mp.goals} goal
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-3 items-center">
+                  <label className="sr-only">Voto</label>
+                  <select
+                    value={ratings[mp.playerId]?.rating ?? ""}
+                    onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
+                    className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-orange focus:outline-none appearance-none cursor-pointer"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
+                  >
+                    <option value="">—</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="sr-only">Nota</label>
+                  <input
+                    type="text"
+                    placeholder="Nota opzionale"
+                    value={ratings[mp.playerId]?.note ?? ""}
+                    onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
+                    className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Squadra 2 */}
+        <section className="rounded-2xl bg-sport-white/10 backdrop-blur-sm border border-sport-white/20 overflow-hidden shadow-lg">
+          <div className="px-4 py-3 bg-sport-gold/20 border-b border-sport-white/15">
+            <h2 className="font-display font-bold text-lg text-sport-gold">Squadra 2</h2>
+          </div>
+          <ul className="divide-y divide-sport-white/10">
+            {team2.map((mp) => (
+              <li key={mp.playerId} className="px-4 py-4">
+                <div className="flex items-center gap-2 mb-2">
+                  {mp.isGoalkeeper && (
+                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title="Portiere">
+                      🧤
+                    </span>
+                  )}
+                  <span className="font-body font-medium text-sport-white truncate flex-1">
+                    {mp.player.name}
+                  </span>
+                  {mp.goals > 0 && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-sport-gold/25 text-sport-gold font-display font-semibold text-xs">
+                      {mp.goals} goal
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-3 items-center">
+                  <label className="sr-only">Voto</label>
+                  <select
+                    value={ratings[mp.playerId]?.rating ?? ""}
+                    onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
+                    className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-gold focus:outline-none appearance-none cursor-pointer"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
+                  >
+                    <option value="">—</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="sr-only">Nota</label>
+                  <input
+                    type="text"
+                    placeholder="Nota opzionale"
+                    value={ratings[mp.playerId]?.note ?? ""}
+                    onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
+                    className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-gold focus:outline-none"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={savePagella}
+          disabled={saving}
+          className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition shadow-lg shadow-sport-orange/20"
+        >
+          {saving ? "Salvataggio..." : "Salva pagella"}
+        </button>
+        <Link
+          href="/pagelle"
+          className="block w-full text-center touch-target min-h-[48px] flex items-center justify-center rounded-xl text-sport-white/90 font-display font-semibold hover:text-sport-white transition"
+        >
+          Vedi tutte le pagelle
+        </Link>
+      </div>
     </main>
   );
 }
