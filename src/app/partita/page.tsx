@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import BallLoader from "@/components/BallLoader";
 import {
@@ -52,7 +52,9 @@ export default function PartitaPage() {
   const draggedRef = useRef<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
   const lastDropRef = useRef<number>(0);
   const teamsRef = useRef<{ team1: TeamEntry[]; team2: TeamEntry[] } | null>(null);
-  teamsRef.current = teams;
+  useLayoutEffect(() => {
+    teamsRef.current = teams;
+  }, [teams]);
   const [savedSummary, setSavedSummary] = useState<{ team1: TeamEntry[]; team2: TeamEntry[]; date: string } | null>(null);
 
   useEffect(() => {
@@ -248,8 +250,22 @@ export default function PartitaPage() {
       t2 = [];
     }
     if (t1.length === 0 && t2.length === 0) {
-      alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
-      return;
+      // Ultimo tentativo: leggi di nuovo dal ref (in produzione il timing può essere diverso)
+      const retry = teamsRef.current ?? teams;
+      try {
+        const r1 = Array.from(retry?.team1 ?? []);
+        const r2 = Array.from(retry?.team2 ?? []);
+        if (r1.length > 0 || r2.length > 0) {
+          t1 = r1;
+          t2 = r2;
+        } else {
+          alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
+          return;
+        }
+      } catch {
+        alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
+        return;
+      }
     }
     const all = [...t1, ...t2].map((t) => ({
       playerId: t.playerId,
