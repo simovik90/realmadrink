@@ -42,8 +42,6 @@ export default function HomePage() {
         <p className="text-sport-white/90 text-lg">Squadre di calcetto in un tap</p>
       </div>
 
-      <AddToHome />
-
       {lastResult && (
         <Link
           href="/storico"
@@ -109,6 +107,8 @@ export default function HomePage() {
           Backup dati
         </Link>
       </nav>
+
+      <AddToHome />
     </main>
   );
 }

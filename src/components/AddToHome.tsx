@@ -38,26 +38,30 @@ export function AddToHome() {
   if (!showBanner || isStandalone) return null;
 
   return (
-    <div className="w-full max-w-sm mb-4 rounded-2xl bg-sport-white/10 border border-sport-white/20 px-4 py-3">
-      <p className="text-sport-white/90 text-sm font-medium mb-2">📲 Aggiungi alla Home</p>
+    <p className="w-full max-w-sm mt-6 text-center">
       {isIOS ? (
-        <p className="text-sport-white/70 text-xs">
-          Tocca <span className="font-semibold">Condividi</span> (in basso) e poi{" "}
-          <span className="font-semibold">Aggiungi a Home</span>.
-        </p>
+        <>
+          <span className="text-sport-orange font-display font-semibold">Aggiungi alla Home</span>
+          <span className="block mt-1 text-sport-white/60 text-xs">
+            Condividi (in basso) → Aggiungi a Home
+          </span>
+        </>
       ) : installPrompt ? (
         <button
           type="button"
           onClick={handleInstall}
-          className="text-sport-orange font-semibold text-sm active:opacity-80"
+          className="text-sport-orange font-display font-semibold text-sm underline underline-offset-2 active:opacity-80"
         >
           Installa l’app
         </button>
       ) : (
-        <p className="text-sport-white/70 text-xs">
-          Apri il menu del browser (⋮) e scegli &quot;Installa app&quot; o &quot;Aggiungi a schermata Home&quot;.
-        </p>
+        <>
+          <span className="text-sport-orange font-display font-semibold">Aggiungi alla Home</span>
+          <span className="block mt-1 text-sport-white/60 text-xs">
+            Menu ⋮ → Installa app
+          </span>
+        </>
       )}
-    </div>
+    </p>
   );
 }
