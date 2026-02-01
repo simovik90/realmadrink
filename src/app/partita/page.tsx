@@ -51,6 +51,8 @@ export default function PartitaPage() {
   const [dragged, setDragged] = useState<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
   const draggedRef = useRef<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
   const lastDropRef = useRef<number>(0);
+  const teamsRef = useRef<{ team1: TeamEntry[]; team2: TeamEntry[] } | null>(null);
+  teamsRef.current = teams;
   const [savedSummary, setSavedSummary] = useState<{ team1: TeamEntry[]; team2: TeamEntry[]; date: string } | null>(null);
 
   useEffect(() => {
@@ -225,7 +227,8 @@ export default function PartitaPage() {
   );
 
   const saveMatch = async (customTeams?: { team1: TeamEntry[]; team2: TeamEntry[] } | null) => {
-    const teamsToSave = customTeams ?? teams;
+    // Usa sempre l’ultimo stato delle squadre (evita chiusura obsoleta al clic)
+    const teamsToSave = customTeams ?? teamsRef.current ?? teams;
     if (!teamsToSave) {
       alert("Nessuna squadra da salvare. Genera le squadre e riprova.");
       return;
@@ -234,8 +237,16 @@ export default function PartitaPage() {
       alert("Inserisci la data della partita.");
       return;
     }
-    const t1 = Array.isArray(teamsToSave.team1) ? teamsToSave.team1 : [];
-    const t2 = Array.isArray(teamsToSave.team2) ? teamsToSave.team2 : [];
+    // In produzione/minificazione team1/team2 possono non passare Array.isArray(); usiamo Array.from per avere array veri
+    let t1: TeamEntry[];
+    let t2: TeamEntry[];
+    try {
+      t1 = Array.from(teamsToSave.team1 ?? []);
+      t2 = Array.from(teamsToSave.team2 ?? []);
+    } catch {
+      t1 = [];
+      t2 = [];
+    }
     if (t1.length === 0 && t2.length === 0) {
       alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
       return;
