@@ -12,7 +12,7 @@ export default function ClassificaPage() {
 
   useEffect(() => {
     setError(null);
-    fetch("/api/classifica")
+    fetch("/api/classifica", { cache: "no-store" })
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => {
         if (ok && data && Array.isArray(data.list)) {

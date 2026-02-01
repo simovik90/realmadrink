@@ -77,7 +77,15 @@ export async function GET() {
       };
     });
     classifica.sort((a, b) => b.goals - a.goals || b.presenze - a.presenze);
-    return NextResponse.json({ list: classifica, totalMatches });
+    return NextResponse.json(
+      { list: classifica, totalMatches },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[GET /api/classifica]", e);
