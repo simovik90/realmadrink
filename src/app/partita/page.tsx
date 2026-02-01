@@ -226,10 +226,20 @@ export default function PartitaPage() {
 
   const saveMatch = async (customTeams?: { team1: TeamEntry[]; team2: TeamEntry[] } | null) => {
     const teamsToSave = customTeams ?? teams;
-    if (!teamsToSave || !date) return;
+    if (!teamsToSave) {
+      alert("Nessuna squadra da salvare. Genera le squadre e riprova.");
+      return;
+    }
+    if (!date || !date.trim()) {
+      alert("Inserisci la data della partita.");
+      return;
+    }
     const t1 = Array.isArray(teamsToSave.team1) ? teamsToSave.team1 : [];
     const t2 = Array.isArray(teamsToSave.team2) ? teamsToSave.team2 : [];
-    if (t1.length === 0 && t2.length === 0) return;
+    if (t1.length === 0 && t2.length === 0) {
+      alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
+      return;
+    }
     const all = [...t1, ...t2].map((t) => ({
       playerId: t.playerId,
       team: t.team,
