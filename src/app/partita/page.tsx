@@ -194,8 +194,10 @@ export default function PartitaPage() {
       if (fromTeam === toTeam) return;
       setTeams((prev) => {
         if (!prev) return prev;
-        const sourceTeam = fromTeam === 1 ? prev.team1 : prev.team2;
-        const targetTeam = fromTeam === 1 ? prev.team2 : prev.team1;
+        const src = Array.isArray(prev.team1) ? prev.team1 : [];
+        const tgt = Array.isArray(prev.team2) ? prev.team2 : [];
+        const sourceTeam = fromTeam === 1 ? src : tgt;
+        const targetTeam = fromTeam === 1 ? tgt : src;
         const movedEntry = sourceTeam.find((e) => e.playerId === playerId);
         if (!movedEntry) return prev;
         const newSourceTeam = sourceTeam.filter((e) => e.playerId !== playerId);
@@ -225,7 +227,10 @@ export default function PartitaPage() {
   const saveMatch = async (customTeams?: { team1: TeamEntry[]; team2: TeamEntry[] } | null) => {
     const teamsToSave = customTeams ?? teams;
     if (!teamsToSave || !date) return;
-    const all = [...teamsToSave.team1, ...teamsToSave.team2].map((t) => ({
+    const t1 = Array.isArray(teamsToSave.team1) ? teamsToSave.team1 : [];
+    const t2 = Array.isArray(teamsToSave.team2) ? teamsToSave.team2 : [];
+    if (t1.length === 0 && t2.length === 0) return;
+    const all = [...t1, ...t2].map((t) => ({
       playerId: t.playerId,
       team: t.team,
       isGoalkeeper: t.isGoalkeeper,
@@ -237,8 +242,8 @@ export default function PartitaPage() {
         body: JSON.stringify({ date, teams: all }),
       });
       if (res.ok) {
-        if (teamsToSave) setTeams(teamsToSave);
-        setSavedSummary({ team1: teamsToSave.team1, team2: teamsToSave.team2, date });
+        if (teamsToSave) setTeams({ team1: t1, team2: t2 });
+        setSavedSummary({ team1: t1, team2: t2, date });
         setSaved(true);
         setTimeout(() => {
           setTeams(null);
@@ -481,10 +486,10 @@ export default function PartitaPage() {
                     Squadra 1
                   </h3>
                   <p className="text-center text-sport-white/90 font-display font-semibold text-sm mb-3">
-                    Score: {teamScoreSum(teams.team1)}
+                    Score: {teamScoreSum(Array.isArray(teams.team1) ? teams.team1 : [])}
                   </p>
                   <ul className="space-y-2">
-                    {teams.team1.map((t) => (
+                    {(Array.isArray(teams.team1) ? teams.team1 : []).map((t) => (
                       <li
                         key={t.playerId}
                         draggable
@@ -519,10 +524,10 @@ export default function PartitaPage() {
                     Squadra 2
                   </h3>
                   <p className="text-center text-sport-white/90 font-display font-semibold text-sm mb-3">
-                    Score: {teamScoreSum(teams.team2)}
+                    Score: {teamScoreSum(Array.isArray(teams.team2) ? teams.team2 : [])}
                   </p>
                   <ul className="space-y-2">
-                    {teams.team2.map((t) => (
+                    {(Array.isArray(teams.team2) ? teams.team2 : []).map((t) => (
                       <li
                         key={t.playerId}
                         draggable
@@ -563,8 +568,10 @@ export default function PartitaPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const t1 = savedSummary.team1.map((p) => p.name).join(", ");
-                      const t2 = savedSummary.team2.map((p) => p.name).join(", ");
+                      const s1 = Array.isArray(savedSummary.team1) ? savedSummary.team1 : [];
+                      const s2 = Array.isArray(savedSummary.team2) ? savedSummary.team2 : [];
+                      const t1 = s1.map((p) => p.name).join(", ");
+                      const t2 = s2.map((p) => p.name).join(", ");
                       const text = `Partita ${savedSummary.date}\nSquadra 1: ${t1}\nSquadra 2: ${t2}`;
                       navigator.clipboard?.writeText(text).then(
                         () => alert("Riepilogo copiato!"),
