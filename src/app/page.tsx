@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AddToHome } from "@/components/AddToHome";
+import { NotifySubscribe } from "@/components/NotifySubscribe";
 
 type MatchPlayer = { team: number; goals: number };
 type Match = { id: string; date: string; players: MatchPlayer[] };
@@ -109,6 +110,7 @@ export default function HomePage() {
       </nav>
 
       <AddToHome />
+      <NotifySubscribe />
     </main>
   );
 }

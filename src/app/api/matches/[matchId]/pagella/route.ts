@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendPushToAll } from "@/lib/push";
 
 export async function PATCH(
   request: Request,
@@ -58,6 +59,7 @@ export async function PATCH(
       where: { id: matchId },
       include: { players: { include: { player: true } } },
     });
+    sendPushToAll({ title: "RealMadrink", body: "Pagella aggiornata!" }).catch(() => {});
     return NextResponse.json(updated);
   } catch (e) {
     return NextResponse.json(

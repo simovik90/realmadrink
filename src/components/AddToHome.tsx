@@ -43,7 +43,7 @@ export function AddToHome() {
         <>
           <span className="text-sport-orange font-display font-semibold">Aggiungi alla Home</span>
           <span className="block mt-1 text-sport-white/60 text-xs">
-            Condividi (in basso) → Aggiungi a Home
+            Così si apre come un’app. Tocca Condividi (in basso) → Aggiungi a Home
           </span>
         </>
       ) : installPrompt ? (
@@ -58,7 +58,7 @@ export function AddToHome() {
         <>
           <span className="text-sport-orange font-display font-semibold">Aggiungi alla Home</span>
           <span className="block mt-1 text-sport-white/60 text-xs">
-            Menu ⋮ → Installa app
+            Così si apre come un’app. Menu ⋮ → Installa app
           </span>
         </>
       )}

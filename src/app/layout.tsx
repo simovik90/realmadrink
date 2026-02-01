@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description: "Crea le tue squadre di calcetto in un tap",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "RealMadrink" },
   manifest: "/manifest.json",
+  icons: { apple: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {

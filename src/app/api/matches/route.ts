@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendPushToAll } from "@/lib/push";
 
 export async function GET() {
   try {
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
       },
       include: { players: { include: { player: true } } },
     });
+    sendPushToAll({ title: "RealMadrink", body: "Nuova partita creata!" }).catch(() => {});
     return NextResponse.json(match);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Errore sconosciuto";

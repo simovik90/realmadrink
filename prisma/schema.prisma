@@ -42,3 +42,11 @@ model MatchPlayer {
 
   @@unique([matchId, playerId])
 }
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}

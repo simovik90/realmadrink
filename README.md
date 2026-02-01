@@ -25,6 +25,18 @@ Apri [http://localhost:3000](http://localhost:3000). Su iPhone apri lo stesso in
 
 **Database locale:** puoi usare un Postgres gratuito su [Neon](https://neon.tech) (crei un progetto e copi l’URL in `.env`) oppure lo stesso database che userai su Vercel (Vercel Postgres).
 
+### Notifiche push (nuove partite e pagelle)
+
+Per inviare notifiche a chi ha attivato le notifiche (nuova partita creata o pagella salvata), servono le **chiavi VAPID**:
+
+1. Genera le chiavi: `npx web-push generate-vapid-keys`
+2. In `.env` (e nelle variabili d’ambiente su Vercel) aggiungi:
+   - `VAPID_PUBLIC_KEY` = chiave pubblica
+   - `VAPID_PRIVATE_KEY` = chiave privata
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = stessa chiave pubblica (serve al browser per l’iscrizione)
+
+Se non imposti queste variabili, le notifiche non vengono inviate e il pulsante “Attiva notifiche” non compare in home.
+
 ## Stack
 
 - Next.js 14 (App Router), React, TypeScript
