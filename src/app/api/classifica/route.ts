@@ -7,10 +7,35 @@ import {
   type PlayerStats,
 } from "@/lib/score";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const lastDays = searchParams.get("lastDays");
+    const lastMatches = searchParams.get("lastMatches");
+
+    let matchIds: string[] | null = null;
+    if (lastDays) {
+      const days = Math.max(1, parseInt(lastDays, 10) || 30);
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      const matches = await prisma.match.findMany({
+        where: { date: { gte: from } },
+        select: { id: true },
+      });
+      matchIds = matches.map((m) => m.id);
+    } else if (lastMatches) {
+      const n = Math.max(1, parseInt(lastMatches, 10) || 5);
+      const matches = await prisma.match.findMany({
+        orderBy: { date: "desc" },
+        take: n,
+        select: { id: true },
+      });
+      matchIds = matches.map((m) => m.id);
+    }
+
     const [matchPlayers, totalMatches] = await Promise.all([
       prisma.matchPlayer.findMany({
+        where: matchIds?.length ? { matchId: { in: matchIds } } : undefined,
         include: {
           player: {
             select: {
@@ -24,7 +49,9 @@ export async function GET() {
           },
         },
       }),
-      prisma.match.count(),
+      matchIds
+        ? prisma.match.count({ where: { id: { in: matchIds } } })
+        : prisma.match.count(),
     ]);
     const byPlayer = new Map<
       string,

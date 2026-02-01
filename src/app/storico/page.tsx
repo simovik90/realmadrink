@@ -9,6 +9,8 @@ type MatchPlayer = {
   team: number;
   isGoalkeeper: boolean;
   goals: number;
+  rating?: number | null;
+  note?: string | null;
 };
 type Match = {
   id: string;
@@ -17,16 +19,27 @@ type Match = {
   players: MatchPlayer[];
 };
 
+type PeriodFilter = "all" | "30" | "90";
+
 export default function StoricoPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodFilter>("all");
 
   useEffect(() => {
-    fetch("/api/matches")
+    fetch("/api/matches", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setMatches(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredMatches = (() => {
+    if (period === "all") return matches;
+    const days = period === "30" ? 30 : 90;
+    const cut = new Date();
+    cut.setDate(cut.getDate() - days);
+    return matches.filter((m) => new Date(m.date) >= cut);
+  })();
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -41,6 +54,20 @@ export default function StoricoPage() {
     const team1 = m.players.filter((p) => p.team === 1);
     const team2 = m.players.filter((p) => p.team === 2);
     return { team1, team2 };
+  };
+
+  const matchResult = (m: Match) => {
+    const { team1, team2 } = byTeam(m);
+    const g1 = team1.reduce((s, p) => s + p.goals, 0);
+    const g2 = team2.reduce((s, p) => s + p.goals, 0);
+    return { g1, g2 };
+  };
+
+  const getMVP = (m: Match): MatchPlayer | null => {
+    const withRating = m.players.filter((p) => p.rating != null && p.rating > 0);
+    if (withRating.length === 0) return null;
+    const maxRating = Math.max(...withRating.map((p) => p.rating ?? 0));
+    return withRating.find((p) => (p.rating ?? 0) === maxRating) ?? null;
   };
 
   const addGoal = async (matchId: string, playerId: string) => {
@@ -124,15 +151,32 @@ export default function StoricoPage() {
         <div className="w-10" />
       </header>
 
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-sport-white/80 text-sm">Periodo:</span>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
+          className="min-h-[40px] px-3 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+        >
+          <option value="all">Tutte</option>
+          <option value="30">Ultimi 30 giorni</option>
+          <option value="90">Ultimi 3 mesi</option>
+        </select>
+      </div>
+
       {loading ? (
         <p className="text-sport-white/80">Caricamento...</p>
       ) : matches.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
           Nessuna partita salvata. Crea una partita e salvala per vederla qui.
         </p>
+      ) : filteredMatches.length === 0 ? (
+        <p className="text-sport-white/80 text-center py-12">
+          Nessuna partita nel periodo selezionato.
+        </p>
       ) : (
         <ul className="space-y-4">
-          {matches.map((m) => {
+          {filteredMatches.map((m) => {
             const { team1, team2 } = byTeam(m);
             return (
               <li
@@ -181,6 +225,26 @@ export default function StoricoPage() {
                   >
                     Crea pagella
                   </Link>
+                )}
+                {(() => {
+                  const { g1, g2 } = matchResult(m);
+                  return (
+                    <p className="text-center font-display font-bold text-sport-white text-lg mb-3">
+                      Squadra 1 <span className="text-sport-orange">{g1}</span>
+                      {" – "}
+                      <span className="text-sport-gold">{g2}</span> Squadra 2
+                    </p>
+                  );
+                })()}
+                {getMVP(m) && (
+                  <p className="text-sport-white/80 text-sm mb-2 text-center">
+                    ⭐ MVP: {getMVP(m)!.player.name}
+                    {getMVP(m)!.rating != null && (
+                      <span className="ml-1 font-display font-semibold text-sport-orange">
+                        ({getMVP(m)!.rating}/10)
+                      </span>
+                    )}
+                  </p>
                 )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>

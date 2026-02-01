@@ -51,6 +51,7 @@ export default function PartitaPage() {
   const [dragged, setDragged] = useState<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
   const draggedRef = useRef<{ playerId: string; fromTeam: 1 | 2 } | null>(null);
   const lastDropRef = useRef<number>(0);
+  const [savedSummary, setSavedSummary] = useState<{ team1: TeamEntry[]; team2: TeamEntry[]; date: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/players")
@@ -237,13 +238,15 @@ export default function PartitaPage() {
       });
       if (res.ok) {
         if (teamsToSave) setTeams(teamsToSave);
+        setSavedSummary({ team1: teamsToSave.team1, team2: teamsToSave.team2, date });
         setSaved(true);
         setTimeout(() => {
           setTeams(null);
           setDate("");
           setSaved(false);
+          setSavedSummary(null);
           setManualTeam({});
-        }, 1500);
+        }, 8000);
       } else {
         const err = await res.json().catch(() => ({}));
         const msg = err.detail
@@ -542,7 +545,38 @@ export default function PartitaPage() {
                   </ul>
                 </div>
               </div>
-              {saved ? (
+              {saved && savedSummary ? (
+                <div className="rounded-2xl bg-sport-white/15 border border-sport-white/25 p-4 space-y-3">
+                  <p className="text-center text-sport-white font-display font-bold text-lg">
+                    ✓ Partita salvata!
+                  </p>
+                  <p className="text-center text-sport-white/90 text-sm">
+                    {new Date(savedSummary.date).toLocaleDateString("it-IT", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                  <p className="text-center text-sport-white/80 text-sm">
+                    Assegna i goal nello <Link href="/storico" className="text-sport-orange underline">Storico partite</Link> per aggiornare risultato e classifica.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const t1 = savedSummary.team1.map((p) => p.name).join(", ");
+                      const t2 = savedSummary.team2.map((p) => p.name).join(", ");
+                      const text = `Partita ${savedSummary.date}\nSquadra 1: ${t1}\nSquadra 2: ${t2}`;
+                      navigator.clipboard?.writeText(text).then(
+                        () => alert("Riepilogo copiato!"),
+                        () => alert(text)
+                      );
+                    }}
+                    className="w-full touch-target min-h-[44px] rounded-xl bg-sport-orange text-white font-display font-semibold"
+                  >
+                    Copia riepilogo
+                  </button>
+                </div>
+              ) : saved ? (
                 <p className="text-center text-sport-white font-display font-semibold text-lg">
                   ✓ Partita salvata!
                 </p>

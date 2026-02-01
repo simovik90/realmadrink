@@ -48,6 +48,33 @@ export default function PagellePage() {
     return { team1, team2 };
   };
 
+  const getMVP = (m: Match): MatchPlayer | null => {
+    const withRating = m.players.filter((p) => p.rating != null && p.rating > 0);
+    if (withRating.length === 0) return null;
+    const maxRating = Math.max(...withRating.map((p) => p.rating ?? 0));
+    return withRating.find((p) => (p.rating ?? 0) === maxRating) ?? null;
+  };
+
+  const copyPagella = (m: Match) => {
+    const { team1, team2 } = byTeam(m);
+    const mvp = getMVP(m);
+    const lines = [
+      `📝 Pagella – ${formatDate(m.date)}`,
+      mvp ? `⭐ MVP: ${mvp.player.name} (${mvp.rating}/10)` : "",
+      "",
+      "Squadra 1:",
+      ...team1.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
+      "",
+      "Squadra 2:",
+      ...team2.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
+    ].filter(Boolean);
+    const text = lines.join("\n");
+    navigator.clipboard?.writeText(text).then(
+      () => alert("Pagella copiata negli appunti!"),
+      () => alert("Copia manuale:\n\n" + text)
+    );
+  };
+
   return (
     <main className="min-h-dvh px-4 py-6 safe-top safe-bottom max-w-lg mx-auto">
       <div className="flex justify-center pt-4 pb-2 safe-top">
@@ -85,13 +112,30 @@ export default function PagellePage() {
                   <p className="font-display font-bold text-sport-white">
                     {formatDate(m.date)}
                   </p>
-                  <Link
-                    href={`/pagella/${m.id}`}
-                    className="touch-target min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm flex items-center justify-center active:scale-95 transition"
-                  >
-                    Modifica
-                  </Link>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copyPagella(m)}
+                      className="touch-target min-h-[40px] px-3 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold text-sm border border-sport-white/30"
+                    >
+                      Condividi
+                    </button>
+                    <Link
+                      href={`/pagella/${m.id}`}
+                      className="touch-target min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm flex items-center justify-center active:scale-95 transition"
+                    >
+                      Modifica
+                    </Link>
+                  </div>
                 </div>
+                {getMVP(m) && (
+                  <p className="text-sport-white/90 text-sm mb-2">
+                    ⭐ MVP: <span className="font-display font-semibold text-sport-orange">{getMVP(m)!.player.name}</span>
+                    {getMVP(m)!.rating != null && (
+                      <span className="ml-1 text-sport-white/80">({getMVP(m)!.rating}/10)</span>
+                    )}
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-display font-semibold text-sport-orange mb-2">Squadra 1</p>
