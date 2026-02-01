@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
+import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -37,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="it" className={`${outfit.variable} ${inter.variable}`}>
       <body className="font-body antialiased text-sport-white min-h-dvh safe-top safe-bottom">
+        <PwaRegister />
         {children}
       </body>
     </html>

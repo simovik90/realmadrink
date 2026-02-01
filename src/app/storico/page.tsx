@@ -63,6 +63,8 @@ export default function StoricoPage() {
     return { g1, g2 };
   };
 
+  const hasPagella = (m: Match) => m.players.some((p) => p.rating != null);
+
   const getMVP = (m: Match): MatchPlayer | null => {
     const withRating = m.players.filter((p) => p.rating != null && p.rating > 0);
     if (withRating.length === 0) return null;
@@ -223,7 +225,7 @@ export default function StoricoPage() {
                     href={`/pagella/${m.id}`}
                     className="w-full touch-target min-h-[44px] mb-3 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold border border-sport-white/30 flex items-center justify-center active:scale-[0.98] transition"
                   >
-                    Crea pagella
+                    {hasPagella(m) ? "Visualizza pagella" : "Crea pagella"}
                   </Link>
                 )}
                 {(() => {

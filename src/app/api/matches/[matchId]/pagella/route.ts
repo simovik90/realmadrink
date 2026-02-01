@@ -9,7 +9,7 @@ export async function PATCH(
     const { matchId } = await params;
     const match = await prisma.match.findUnique({
       where: { id: matchId },
-      select: { concluded: true },
+      select: { concluded: true, players: { select: { rating: true } } },
     });
     if (!match) {
       return NextResponse.json({ error: "Partita non trovata" }, { status: 404 });
@@ -21,6 +21,17 @@ export async function PATCH(
       );
     }
     const body = await request.json();
+    const hasExistingRatings = match.players.some((p) => p.rating != null);
+    if (hasExistingRatings) {
+      const expectedPassword = process.env.REALMADRINK_DELETE_PASSWORD ?? "Realmadrink";
+      const password = typeof body.password === "string" ? body.password.trim() : "";
+      if (password !== expectedPassword) {
+        return NextResponse.json(
+          { error: "Password errata. Inserisci la password per modificare la pagella." },
+          { status: 403 }
+        );
+      }
+    }
     const players = body.players as Array<{ playerId: string; rating?: number | null; note?: string | null }>;
     if (!Array.isArray(players) || players.length === 0) {
       return NextResponse.json(

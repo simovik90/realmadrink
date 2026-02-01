@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AddToHome } from "@/components/AddToHome";
 
 type MatchPlayer = { team: number; goals: number };
 type Match = { id: string; date: string; players: MatchPlayer[] };
@@ -40,6 +41,8 @@ export default function HomePage() {
         </h1>
         <p className="text-sport-white/90 text-lg">Squadre di calcetto in un tap</p>
       </div>
+
+      <AddToHome />
 
       {lastResult && (
         <Link
