@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -39,31 +40,49 @@ export async function POST(request: Request) {
 
   for (let i = 0; i < validTexts.length; i += BATCH_SIZE) {
     const batch = validTexts.slice(i, i + BATCH_SIZE);
-    const textsJson = JSON.stringify(batch);
-    const prompt = `Translate these Italian texts to English. Return ONLY a valid JSON array of strings, same order, same length. Example: ["translation1","translation2"]
+    // Pass texts as numbered lines instead of JSON to avoid escaping issues
+    const numberedLines = batch.map((t, idx) => `${idx + 1}. ${t}`).join("\n");
+    const prompt = `Translate these Italian texts to English. Return a JSON array of strings in the same order. One translation per line, same count.
 
-Input (JSON array): ${textsJson}
+Italian texts:
+${numberedLines}
 
-Output (JSON array only, no markdown):`;
+Respond with ONLY a valid JSON array, e.g. ["translation1","translation2"]`;
 
     let lastError: unknown;
     let batchSuccess = false;
 
     for (const model of models) {
       try {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
+        const url = `${GEMINI_BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.3,
+          },
+        };
+
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
 
-        let raw = (response.text ?? "").trim();
-        if (!raw && response.candidates?.[0]?.content?.parts) {
-          raw = response.candidates[0].content.parts
-            .map((p: { text?: string }) => p?.text ?? "")
-            .join("")
-            .trim();
+        if (!res.ok) {
+          const errBody = await res.text();
+          lastError = new Error(`Gemini ${model}: ${res.status} ${errBody.slice(0, 200)}`);
+          continue;
         }
+
+        const data = (await res.json()) as {
+          candidates?: Array<{
+            content?: { parts?: Array<{ text?: string }> };
+          }>;
+        };
+
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        let raw = parts.map((p) => p.text ?? "").join("").trim();
         if (!raw) {
           lastError = new Error(`Model ${model}: empty response`);
           continue;
@@ -77,7 +96,7 @@ Output (JSON array only, no markdown):`;
             .trim();
           parsed = JSON.parse(cleaned);
         } catch {
-          lastError = new Error(`Model ${model}: parse error`);
+          lastError = new Error(`Model ${model}: parse error - ${raw.slice(0, 100)}`);
           continue;
         }
 
