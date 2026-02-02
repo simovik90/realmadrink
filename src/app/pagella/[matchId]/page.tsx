@@ -35,6 +35,7 @@ export default function PagellaMatchPage() {
   const [hadExistingPagella, setHadExistingPagella] = useState(false);
   const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
   const [translatingNotes, setTranslatingNotes] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!matchId) return;
@@ -158,10 +159,12 @@ export default function PagellaMatchPage() {
       .map((mp) => ({ playerId: mp.playerId, text: mp.note!.trim() }));
     if (notesToTranslate.length === 0) {
       setTranslatedNotes({});
+      setTranslateError(null);
       return;
     }
     setTranslatingNotes(true);
     setTranslatedNotes({});
+    setTranslateError(null);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -180,18 +183,23 @@ export default function PagellaMatchPage() {
               : n.text;
         });
         setTranslatedNotes(map);
+        setTranslateError(null);
+      } else {
+        setTranslateError(data?.detail || data?.error || t("pagella.translateError"));
       }
     } catch {
       setTranslatedNotes({});
+      setTranslateError(t("pagella.translateError"));
     } finally {
       setTranslatingNotes(false);
     }
-  }, [match, lang]);
+  }, [match, lang, t]);
 
   useEffect(() => {
     if (lang === "it") {
       setTranslatedNotes({});
       setTranslatingNotes(false);
+      setTranslateError(null);
     } else {
       fetchTranslations();
     }
@@ -310,7 +318,9 @@ export default function PagellaMatchPage() {
             {lang === "en"
               ? translatingNotes
                 ? t("pagella.translating")
-                : t("pagella.translateHint")
+                : translateError
+                  ? translateError
+                  : t("pagella.translateHint")
               : t("pagella.switchToEnHint")}
           </p>
         )}

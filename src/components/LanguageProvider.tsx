@@ -221,6 +221,10 @@ const DICT: Dictionary = {
     it: "Passa a EN per tradurre le note in inglese.",
     en: "Switch to EN to translate notes to English.",
   },
+  "pagella.translateError": {
+    it: "Traduzione non disponibile. Verifica GEMINI_API_KEY su Vercel e fai redeploy.",
+    en: "Translation unavailable. Check GEMINI_API_KEY on Vercel and redeploy.",
+  },
   // Export
   "export.title": { it: "Backup dati", en: "Data backup" },
   "export.description": {

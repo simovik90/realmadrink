@@ -33,60 +33,66 @@ export async function POST(request: Request) {
     return NextResponse.json({ translations: [] });
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const textsJson = JSON.stringify(validTexts);
-    const prompt = `Translate these Italian texts to English. Return ONLY a valid JSON array of strings, same order, same length. Example: ["translation1","translation2"]
+  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+  const textsJson = JSON.stringify(validTexts);
+  const prompt = `Translate these Italian texts to English. Return ONLY a valid JSON array of strings, same order, same length. Example: ["translation1","translation2"]
 
 Input (JSON array): ${textsJson}
 
 Output (JSON array only, no markdown):`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-    });
-
-    const raw = (response.text ?? "").trim();
-    if (!raw) {
-      return NextResponse.json(
-        { error: "Empty translation response" },
-        { status: 500 }
-      );
-    }
-
-    let parsed: unknown;
+  let lastError: unknown;
+  for (const model of models) {
     try {
-      const cleaned = raw
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```\s*$/i, "")
-        .trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Translate parse error, raw:", raw.slice(0, 200));
-      return NextResponse.json(
-        { error: "Translation response parse error" },
-        { status: 500 }
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+      });
+
+      let raw = (response.text ?? "").trim();
+      if (!raw && response.candidates?.[0]?.content?.parts) {
+        raw = response.candidates[0].content.parts
+          .map((p: { text?: string }) => p?.text ?? "")
+          .join("")
+          .trim();
+      }
+      if (!raw) {
+        lastError = new Error(`Model ${model}: empty response`);
+        continue;
+      }
+
+      let parsed: unknown;
+      try {
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```\s*$/i, "")
+          .trim();
+        parsed = JSON.parse(cleaned);
+      } catch {
+        lastError = new Error(`Model ${model}: parse error`);
+        continue;
+      }
+
+      if (!Array.isArray(parsed)) {
+        lastError = new Error(`Model ${model}: invalid format`);
+        continue;
+      }
+
+      const translations = validTexts.map((_, i) =>
+        typeof parsed[i] === "string" ? String(parsed[i]).trim() : validTexts[i] ?? ""
       );
+
+      return NextResponse.json({ translations });
+    } catch (err) {
+      lastError = err;
     }
-
-    if (!Array.isArray(parsed)) {
-      return NextResponse.json(
-        { error: "Translation response invalid format" },
-        { status: 500 }
-      );
-    }
-
-    const translations = validTexts.map((_, i) =>
-      typeof parsed[i] === "string" ? String(parsed[i]).trim() : validTexts[i] ?? ""
-    );
-
-    return NextResponse.json({ translations });
-  } catch (err) {
-    console.error("Translate API error:", err);
-    return NextResponse.json(
-      { error: "Translation failed" },
-      { status: 500 }
-    );
   }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  console.error("Translate API error (all models failed):", lastError);
+  return NextResponse.json(
+    { error: "Translation failed", detail: message },
+    { status: 500 }
+  );
 }

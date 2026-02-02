@@ -26,6 +26,7 @@ export default function PagellePage() {
   const [loading, setLoading] = useState(true);
   const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
   const [translatingNotes, setTranslatingNotes] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/matches")
@@ -49,10 +50,12 @@ export default function PagellePage() {
     });
     if (items.length === 0) {
       setTranslatedNotes({});
+      setTranslateError(null);
       return;
     }
     setTranslatingNotes(true);
     setTranslatedNotes({});
+    setTranslateError(null);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -69,18 +72,23 @@ export default function PagellePage() {
               : item.text;
         });
         setTranslatedNotes(map);
+        setTranslateError(null);
+      } else {
+        setTranslateError(data?.detail || data?.error || t("pagella.translateError"));
       }
     } catch {
       setTranslatedNotes({});
+      setTranslateError(t("pagella.translateError"));
     } finally {
       setTranslatingNotes(false);
     }
-  }, [matches, lang]);
+  }, [matches, lang, t]);
 
   useEffect(() => {
     if (lang === "it") {
       setTranslatedNotes({});
       setTranslatingNotes(false);
+      setTranslateError(null);
     } else {
       fetchTranslations();
     }
@@ -161,8 +169,8 @@ export default function PagellePage() {
       ) : (
         <>
           {lang === "en" && matches.some((m) => m.players.some((mp) => mp.note?.trim())) && (
-            <p className="text-sport-white/50 text-xs mb-4">
-              {translatingNotes ? t("pagella.translating") : t("pagella.translateHint")}
+            <p className={`text-xs mb-4 ${translateError ? "text-amber-300" : "text-sport-white/50"}`}>
+              {translatingNotes ? t("pagella.translating") : translateError || t("pagella.translateHint")}
             </p>
           )}
           <ul className="space-y-6">
