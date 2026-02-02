@@ -57,6 +57,7 @@ export default function PartitaPage() {
     teamsRef.current = teams;
   }, [teams]);
   const [savedSummary, setSavedSummary] = useState<{ team1: TeamEntry[]; team2: TeamEntry[]; date: string } | null>(null);
+  const [playerSearch, setPlayerSearch] = useState("");
   const { t, lang } = useLanguage();
 
   useEffect(() => {
@@ -370,7 +371,7 @@ export default function PartitaPage() {
 
           <div className="mb-2 flex items-center justify-between">
             <span className="font-display font-semibold text-sport-white">
-              Presenti ({selectedCount})
+              {t("match.presenti")} ({selectedCount})
             </span>
             <button
               type="button"
@@ -393,7 +394,7 @@ export default function PartitaPage() {
                   : "bg-sport-white/20 text-sport-white border border-sport-white/30"
               }`}
             >
-              Sorteggia
+              {t("match.mode.random")}
             </button>
             <button
               type="button"
@@ -404,15 +405,26 @@ export default function PartitaPage() {
                   : "bg-sport-white/20 text-sport-white border border-sport-white/30"
               }`}
             >
-              Seleziona manualmente
+              {t("match.mode.manual")}
             </button>
           </div>
 
+      {players.length > 0 && !loading && (
+            <input
+              type="text"
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              placeholder={t("players.searchPlaceholder")}
+              className="w-full mb-4 min-h-[44px] px-4 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 placeholder:text-sport-white/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+            />
+          )}
       {loading ? (
         <p className="text-sport-white/80">{t("match.loadingPlayers")}</p>
       ) : (
             <ul className="space-y-2 mb-6">
-              {players.map((p) => (
+              {players
+                .filter((p) => !playerSearch.trim() || p.name.toLowerCase().includes(playerSearch.trim().toLowerCase()))
+                .map((p) => (
                 <li key={p.id}>
                   <button
                     type="button"
@@ -439,14 +451,14 @@ export default function PartitaPage() {
               disabled={!canGenerate}
               className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition mb-6"
             >
-              Suggerisci squadre
+              {t("match.suggestTeams")}
             </button>
           )}
 
           {mode === "manuale" && selectedCount >= 2 && !teams && (
             <>
               <p className="text-sport-white/80 text-sm mb-3">
-                Assegna ogni giocatore a una squadra (stesso numero per squadra). Squadra 1: {manualTeam1Count} · Squadra 2: {manualTeam2Count}
+                {t("match.manual.help")} {t("match.teams.team1")}: {manualTeam1Count} · {t("match.teams.team2")}: {manualTeam2Count}
               </p>
               <ul className="space-y-2 mb-4">
                 {selectedList.map((p) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -12,6 +13,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function NotifySubscribe() {
+  const { t } = useLanguage();
   const [supported, setSupported] = useState(false);
   const [status, setStatus] = useState<"idle" | "subscribed" | "denied" | "loading" | "error">("idle");
 
@@ -66,7 +68,7 @@ export function NotifySubscribe() {
   if (status === "subscribed") {
     return (
       <p className="w-full max-w-sm mt-3 text-center text-sport-white/60 text-xs">
-        Notifiche attivate: riceverai un avviso per nuove partite e pagelle.
+        {t("home.notificationsActive")}
       </p>
     );
   }
@@ -79,10 +81,10 @@ export function NotifySubscribe() {
         disabled={status === "loading"}
         className="text-sport-orange font-display font-semibold text-sm underline underline-offset-2 active:opacity-80 disabled:opacity-50"
       >
-        {status === "loading" ? "Attivazione..." : "Attiva notifiche (nuove partite e pagelle)"}
+        {status === "loading" ? t("home.notificationsActivating") : t("home.notifications")}
       </button>
       {status === "error" && (
-        <span className="block mt-1 text-sport-white/50 text-xs">Riprova o controlla i permessi.</span>
+        <span className="block mt-1 text-sport-white/50 text-xs">{t("home.notificationsRetry")}</span>
       )}
     </p>
   );

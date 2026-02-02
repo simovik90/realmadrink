@@ -17,19 +17,65 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Tema predefinito - verde scuro */
 body {
   min-height: 100dvh;
-  background: linear-gradient(180deg, var(--pitch-dark) 0%, var(--pitch) 25%, var(--pitch-light) 50%, var(--pitch) 75%, var(--pitch-dark) 100%);
+  background: linear-gradient(180deg, #0d3b2e 0%, #1a6b4f 25%, #228b5e 50%, #1a6b4f 75%, #0d3b2e 100%);
   background-attachment: fixed;
 }
 
-/* Safe area per iPhone notch */
+body [class*="text-sport-white"] {
+  color: #f8f9fa !important;
+}
+
+body [class*="bg-sport-white"] {
+  background-color: rgba(248, 249, 250, 0.15) !important;
+}
+
+body [class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+body [class*="border-sport-white"] {
+  border-color: rgba(248, 249, 250, 0.2) !important;
+}
+
+/* Tema night - sfondo nero */
+[data-theme="dark"] body {
+  background: #000;
+  background-attachment: fixed;
+}
+
+[data-theme="dark"] body [class*="text-sport-white"] {
+  color: #f8f9fa !important;
+}
+
+[data-theme="dark"] body [class*="bg-sport-white"] {
+  background-color: rgba(248, 249, 250, 0.15) !important;
+}
+
+[data-theme="dark"] body [class*="bg-sport-white"]:not([class*="bg-sport-white/"]) {
+  background-color: rgba(248, 249, 250, 0.95) !important;
+}
+
+[data-theme="dark"] body [class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] body [class*="border-sport-white"] {
+  border-color: rgba(248, 249, 250, 0.2) !important;
+}
+
+/* Safe area per iPhone notch + spazio per toggle lingua/tema in basso */
+.safe-bottom {
+  padding-bottom: 6rem;
+}
 @supports (padding: max(0px)) {
   .safe-top {
     padding-top: max(env(safe-area-inset-top), 0.75rem);
   }
   .safe-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 6rem);
   }
 }
 

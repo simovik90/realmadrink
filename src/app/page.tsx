@@ -11,7 +11,7 @@ type Match = { id: string; date: string; players: MatchPlayer[] };
 
 export default function HomePage() {
   const [lastMatch, setLastMatch] = useState<Match | null>(null);
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetch("/api/matches", { cache: "no-store" })
@@ -31,8 +31,6 @@ export default function HomePage() {
       return { g1, g2, date: lastMatch.date };
     })();
 
-  const locale = lang === "it" ? "it-IT" : "en-GB";
-
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center px-4 py-8 safe-top safe-bottom">
       <div className="text-center mb-12">
@@ -41,30 +39,37 @@ export default function HomePage() {
           alt="RealMadrink"
           className="h-20 w-auto object-contain mx-auto mb-4"
         />
-        <h1 className="font-display font-bold text-4xl sm:text-5xl text-sport-white drop-shadow-lg mb-2">
+        <h1 className="font-display font-bold text-4xl sm:text-5xl text-sport-white drop-shadow-lg">
           {t("nav.home.title")}
         </h1>
-        <p className="text-sport-white/90 text-lg">{t("nav.home.subtitle")}</p>
       </div>
 
       {lastResult && (
         <Link
           href="/storico"
-          className="w-full max-w-sm mb-6 rounded-2xl bg-sport-white/15 border border-sport-white/25 px-4 py-3 text-center"
+          className="w-full max-w-sm mb-6 flex flex-col items-center"
         >
-          <p className="text-sport-white/70 text-sm">{t("home.lastMatch")}</p>
-          <p className="font-display font-bold text-sport-white text-xl">
-            Squadra 1 <span className="text-sport-orange">{lastResult.g1}</span>
-            {" – "}
-            <span className="text-sport-gold">{lastResult.g2}</span> Squadra 2
-          </p>
-          <p className="text-sport-white/60 text-xs mt-1">
-            {new Date(lastResult.date).toLocaleDateString(locale, {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </p>
+          <span className="text-sport-white/80 text-xs font-medium uppercase tracking-wide mb-1.5">
+            {t("home.lastMatch")}
+          </span>
+          <div className="w-full flex items-center rounded-xl overflow-hidden bg-neutral-700/90 border border-white/15">
+            <span className="flex-1 py-2 px-2 text-center font-display font-semibold text-white text-sm truncate">
+              {t("history.team1")}
+            </span>
+            <div className="flex shrink-0 py-1">
+              <div className="bg-red-600 rounded-lg px-4 py-1 flex items-center gap-3">
+                <span className="font-display font-bold text-white text-base tabular-nums">
+                  {lastResult.g1}
+                </span>
+                <span className="font-display font-bold text-white text-base tabular-nums">
+                  {lastResult.g2}
+                </span>
+              </div>
+            </div>
+            <span className="flex-1 py-2 px-2 text-center font-display font-semibold text-white text-sm truncate">
+              {t("history.team2")}
+            </span>
+          </div>
         </Link>
       )}
 
@@ -89,6 +94,13 @@ export default function HomePage() {
         >
           <span className="text-2xl">🏆</span>
           {t("nav.standings")}
+        </Link>
+        <Link
+          href="/statistiche"
+          className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/60 text-sport-white font-display font-semibold text-lg active:scale-[0.98] transition-transform"
+        >
+          <span className="text-2xl">📊</span>
+          {t("nav.stats")}
         </Link>
         <Link
           href="/storico"

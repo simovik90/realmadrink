@@ -7,6 +7,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 type ClassificaEntry = { playerId: string; name: string; goals: number; presenze: number; score: number };
 
 type PeriodFilter = "all" | "30" | "5";
+type SortBy = "goals" | "avg" | "score" | "presenze" | "name";
 
 export default function ClassificaPage() {
   const { t } = useLanguage();
@@ -14,6 +15,7 @@ export default function ClassificaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<PeriodFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("goals");
 
   const fetchClassifica = useCallback(() => {
     setError(null);
@@ -33,9 +35,9 @@ export default function ClassificaPage() {
           setList([]);
         }
       })
-      .catch(() => setError("Errore di connessione"))
+      .catch(() => setError(t("history.connectionError")))
       .finally(() => setLoading(false));
-  }, [period]);
+  }, [period, t]);
 
   useEffect(() => {
     setLoading(true);
@@ -113,19 +115,10 @@ export default function ClassificaPage() {
           <option value="30">{t("history.last30")}</option>
           <option value="5">{t("standings.last5")}</option>
         </select>
-        {list.length > 0 && (
-          <button
-            type="button"
-            onClick={handleCondividi}
-            className="min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm"
-          >
-            {t("standings.share")}
-          </button>
-        )}
       </div>
 
       {loading ? (
-        <p className="text-sport-white/80">Caricamento...</p>
+        <p className="text-sport-white/80">{t("history.loading")}</p>
       ) : error ? (
         <p className="text-red-200 bg-red-900/40 px-4 py-3 rounded-xl text-center">
           {error}
@@ -135,17 +128,44 @@ export default function ClassificaPage() {
           {t("standings.empty")}
         </p>
       ) : (
-        <div className="rounded-2xl bg-sport-white/10 border border-sport-white/20 overflow-hidden" id="classifica-table">
-          <div className="grid grid-cols-12 gap-1 px-3 py-2 bg-sport-white/20 font-display font-semibold text-sport-white text-xs">
-            <span className="col-span-1 text-center">#</span>
-            <span className="col-span-3">{t("standings.player")}</span>
-            <span className="col-span-1 text-center">G</span>
-            <span className="col-span-1 text-center">{t("standings.media")}</span>
-            <span className="col-span-2 text-center">{t("standings.presenze")}</span>
-            <span className="col-span-2 text-center">Score</span>
+        <>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="text-sport-white/80 text-sm">{t("standings.sortBy")}</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="min-h-[40px] px-3 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+            >
+              <option value="goals">{t("standings.sortGoals")}</option>
+              <option value="avg">{t("standings.sortAvg")}</option>
+              <option value="score">{t("standings.sortScore")}</option>
+              <option value="presenze">{t("standings.sortPresenze")}</option>
+              <option value="name">{t("standings.sortName")}</option>
+            </select>
           </div>
-          <ul className="divide-y divide-sport-white/10">
-            {list.map((entry, i) => {
+          <div className="rounded-2xl bg-sport-white/10 border border-sport-white/20 overflow-hidden" id="classifica-table">
+            <div className="grid grid-cols-12 gap-1 px-3 py-2 bg-sport-white/20 font-display font-semibold text-sport-white text-xs">
+              <span className="col-span-1 text-center">#</span>
+              <span className="col-span-3">{t("standings.player")}</span>
+              <span className="col-span-1 text-center">G</span>
+              <span className="col-span-1 text-center">{t("standings.media")}</span>
+              <span className="col-span-2 text-center">{t("standings.presenze")}</span>
+              <span className="col-span-2 text-center">Score</span>
+            </div>
+            <ul className="divide-y divide-sport-white/10">
+              {[...list]
+                .sort((a, b) => {
+                  if (sortBy === "goals") return b.goals - a.goals || b.presenze - a.presenze;
+                  if (sortBy === "avg") {
+                    const avgA = a.presenze > 0 ? a.goals / a.presenze : 0;
+                    const avgB = b.presenze > 0 ? b.goals / b.presenze : 0;
+                    return avgB - avgA;
+                  }
+                  if (sortBy === "score") return b.score - a.score;
+                  if (sortBy === "presenze") return b.presenze - a.presenze;
+                  return a.name.localeCompare(b.name);
+                })
+                .map((entry, i) => {
               const media = entry.presenze > 0 ? (entry.goals / entry.presenze).toFixed(1) : "0";
               return (
                 <li
@@ -167,6 +187,16 @@ export default function ClassificaPage() {
             })}
           </ul>
         </div>
+        {list.length > 0 && (
+          <button
+            type="button"
+            onClick={handleCondividi}
+            className="w-full mt-6 touch-target min-h-[48px] rounded-xl bg-sport-orange text-white font-display font-semibold"
+          >
+            {t("standings.share")}
+          </button>
+        )}
+        </>
       )}
     </main>
   );

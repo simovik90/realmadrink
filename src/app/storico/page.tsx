@@ -202,8 +202,8 @@ export default function StoricoPage() {
                     type="button"
                     onClick={() => deleteMatch(m.id)}
                     className="touch-target min-w-[44px] min-h-[44px] flex items-center justify-center text-sport-white/70 hover:text-red-300 rounded-lg"
-                    aria-label="Elimina partita"
-                    title="Elimina partita"
+                    aria-label={t("common.deleteMatch")}
+                    title={t("common.deleteMatch")}
                   >
                     🗑️
                   </button>

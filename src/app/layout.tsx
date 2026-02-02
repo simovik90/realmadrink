@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Outfit, Inter } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import "./globals.css";
@@ -39,13 +41,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className={`${outfit.variable} ${inter.variable}`}>
+    <html lang="it" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-body antialiased text-sport-white min-h-dvh safe-top safe-bottom">
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("realmadrink_theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");}catch(e){document.documentElement.setAttribute("data-theme","light");}`,
+          }}
+        />
         <PwaRegister />
-        <LanguageProvider>
-          {children}
-          <LanguageToggle />
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            {children}
+            <LanguageToggle />
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

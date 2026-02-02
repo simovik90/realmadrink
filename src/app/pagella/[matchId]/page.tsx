@@ -186,7 +186,7 @@ export default function PagellaMatchPage() {
             <img src="/logo.png" alt="RealMadrink" className="h-16 w-auto object-contain" />
           </Link>
         </div>
-        <p className="text-sport-white/80">Caricamento...</p>
+        <p className="text-sport-white/80">{t("history.loading")}</p>
       </main>
     );
   }

@@ -1,7 +1,8 @@
 // Service worker minimale per PWA "Aggiungi alla Home"
 // Richiesto da Chrome/Android per considerare l'app installabile
 
-const CACHE_NAME = "realmadrink-v1";
+const CACHE_NAME = "realmadrink-v2";
+const API_CACHE = "realmadrink-api-v1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -10,14 +11,30 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  // Pass-through: tutte le richieste vanno in rete (nessuna cache offline)
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET") {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  if (url.pathname === "/api/matches" && !url.search) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(API_CACHE).then((cache) => cache.put(event.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || fetch(event.request)))
+    );
+    return;
+  }
   event.respondWith(fetch(event.request));
 });
 

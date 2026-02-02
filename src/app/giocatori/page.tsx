@@ -18,6 +18,7 @@ type Player = {
 export default function GiocatoriPage() {
   const { t } = useLanguage();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
   const [age, setAge] = useState<string>("");
@@ -270,13 +271,24 @@ export default function GiocatoriPage() {
         <p className="text-sport-white/80 text-sm mb-4">
           {t("players.manageHelp")}
         </p>
+        {players.length > 0 && (
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("players.searchPlaceholder")}
+            className="w-full mb-4 min-h-[44px] px-4 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 placeholder:text-sport-white/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+          />
+        )}
         {loading ? (
           <p className="text-sport-white/80">{t("players.loading")}</p>
         ) : players.length === 0 ? (
           <p className="text-sport-white/80 text-center py-8">{t("players.empty")}</p>
         ) : (
           <ul className="space-y-2">
-            {players.map((p) => (
+            {players
+              .filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()))
+              .map((p) => (
               <li
                 key={p.id}
                 className="flex items-center gap-3 touch-target min-h-[56px] px-4 py-3 rounded-xl bg-sport-white/15 backdrop-blur border border-sport-white/20"
@@ -285,7 +297,11 @@ export default function GiocatoriPage() {
                   <span className="font-body text-sport-white text-lg truncate block">{p.name}</span>
                   {(p.age != null || p.practicesSport || (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0) || p.hasPlayedFootball || (p.footballYearsAgo != null)) && (
                     <span className="text-sport-white/70 text-sm">
-                      {[p.age != null && `${p.age} anni`, p.practicesSport && (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0 ? `sport ${p.sportTimesPerWeek}/sett` : "sport"), p.hasPlayedFootball && (p.footballYearsAgo != null ? `calcio ${p.footballYearsAgo} anni fa` : "calcio")].filter(Boolean).join(" · ")}
+                      {[
+                        p.age != null && `${p.age} ${t("players.years")}`,
+                        p.practicesSport && (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0 ? `${t("players.sportLabel")} ${p.sportTimesPerWeek}${t("players.sportPerWeekShort")}` : t("players.sportLabel")),
+                        p.hasPlayedFootball && (p.footballYearsAgo != null ? `${t("players.footballLabel")} ${p.footballYearsAgo} ${t("players.footballAgo")}` : t("players.footballLabel")),
+                      ].filter(Boolean).join(" · ")}
                     </span>
                   )}
                 </div>
@@ -315,7 +331,7 @@ export default function GiocatoriPage() {
                   type="button"
                   onClick={() => deletePlayer(p.id)}
                   className="touch-target min-w-[44px] min-h-[44px] flex items-center justify-center text-sport-white/70 hover:text-red-300 rounded-lg"
-                  aria-label="Elimina"
+                  aria-label={t("common.delete")}
                 >
                   ✕
                 </button>
