@@ -139,9 +139,9 @@ export function computePlayerScore(
 }
 
 /**
- * Distribuzione a serpente per bilanciare le squadre per somma score.
- * Ordina per score decrescente, poi assegna 1-2-2-1-1-2-2... (o 1-2-1-2 con portieri).
- * Restituisce team1 e team2 con somma score simile.
+ * Distribuzione per bilanciare le squadre per somma score.
+ * Greedy: assegna ogni giocatore alla squadra con somma score minore.
+ * Restituisce team1 e team2 con somma score il più simile possibile.
  */
 export type PlayerWithScore = {
   playerId: string;
@@ -151,14 +151,83 @@ export type PlayerWithScore = {
 };
 
 /**
- * Distribuzione a serpente: 1°->squadra1, 2°->squadra2, 3°->squadra2, 4°->squadra1, ...
- * Così la somma degli score delle due squadre è la più simile possibile.
+ * Assegna i giocatori alle due squadre minimizzando la differenza di somma score.
+ * Greedy: ordina per score decrescente, poi assegna sempre alla squadra con somma minore.
+ */
+function assignBalanced(
+  players: PlayerWithScore[],
+  team1: PlayerWithScore[],
+  team2: PlayerWithScore[]
+): void {
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  const toAddPerTeam = sorted.length / 2;
+  const target1 = team1.length + toAddPerTeam;
+  const target2 = team2.length + toAddPerTeam;
+  let sum1 = team1.reduce((s, p) => s + p.score, 0);
+  let sum2 = team2.reduce((s, p) => s + p.score, 0);
+  let count1 = team1.length;
+  let count2 = team2.length;
+
+  for (const p of sorted) {
+    if (count1 >= target1) {
+      team2.push(p);
+      sum2 += p.score;
+      count2++;
+    } else if (count2 >= target2) {
+      team1.push(p);
+      sum1 += p.score;
+      count1++;
+    } else if (sum1 <= sum2) {
+      team1.push(p);
+      sum1 += p.score;
+      count1++;
+    } else {
+      team2.push(p);
+      sum2 += p.score;
+      count2++;
+    }
+  }
+}
+
+/**
+ * Prova swap tra coppie di giocatori per ridurre la differenza di somma.
+ */
+function optimizeBySwaps(team1: PlayerWithScore[], team2: PlayerWithScore[]): void {
+  let improved = true;
+  while (improved) {
+    improved = false;
+    const sum1 = team1.reduce((s, p) => s + p.score, 0);
+    const sum2 = team2.reduce((s, p) => s + p.score, 0);
+    const d = Math.abs(sum1 - sum2);
+    for (let i = 0; i < team1.length; i++) {
+      for (let j = 0; j < team2.length; j++) {
+        const p1 = team1[i];
+        const p2 = team2[j];
+        const newDiff = Math.abs(sum1 - sum2 - 2 * p1.score + 2 * p2.score);
+        if (newDiff < d) {
+          team1[i] = p2;
+          team2[j] = p1;
+          improved = true;
+          break;
+        }
+      }
+      if (improved) break;
+    }
+  }
+}
+
+/**
+ * Distribuzione bilanciata: prima assegna i portieri (1 per squadra), poi il resto
+ * con algoritmo greedy per minimizzare la differenza di somma score.
  */
 export function distributeByScore(
   players: PlayerWithScore[],
   withGoalkeepers: boolean
 ): { team1: PlayerWithScore[]; team2: PlayerWithScore[] } {
   const sorted = [...players].sort((a, b) => b.score - a.score);
+  const team1: PlayerWithScore[] = [];
+  const team2: PlayerWithScore[] = [];
+
   if (withGoalkeepers) {
     const portieri = sorted.filter((p) => p.isGoalkeeper);
     const altri = sorted.filter((p) => !p.isGoalkeeper);
@@ -178,25 +247,13 @@ export function distributeByScore(
       keeper2 = altri[1];
       rest = altri.slice(2);
     }
-    // Assegna il resto a serpente (1-2-2-1-1-2-2-1...) per bilanciare gli score
-    const team1: PlayerWithScore[] = [keeper1];
-    const team2: PlayerWithScore[] = [keeper2];
-    for (let i = 0; i < rest.length; i++) {
-      if (i % 4 === 0 || i % 4 === 3) {
-        team1.push(rest[i]);
-      } else {
-        team2.push(rest[i]);
-      }
-    }
-    return { team1, team2 };
+    team1.push(keeper1);
+    team2.push(keeper2);
+    assignBalanced(rest, team1, team2);
+  } else {
+    assignBalanced(sorted, team1, team2);
   }
-  const half = sorted.length / 2;
-  const team1: PlayerWithScore[] = [];
-  const team2: PlayerWithScore[] = [];
-  for (let i = 0; i < half; i++) {
-    team1.push(sorted[i * 2]);
-    team2.push(sorted[i * 2 + 1]);
-  }
+  optimizeBySwaps(team1, team2);
   return { team1, team2 };
 }
 
