@@ -33,10 +33,15 @@ export async function PATCH(
         );
       }
     }
-    const players = body.players as Array<{ playerId: string; rating?: number | null; note?: string | null }>;
+    const players = body.players as Array<{
+      playerId: string;
+      rating?: number | null;
+      note?: string | null;
+      noteEn?: string | null;
+    }>;
     if (!Array.isArray(players) || players.length === 0) {
       return NextResponse.json(
-        { error: "Invia un array 'players' con { playerId, rating (1-10), note? }" },
+        { error: "Invia un array 'players' con { playerId, rating (1-10), note?, noteEn? }" },
         { status: 400 }
       );
     }
@@ -47,12 +52,14 @@ export async function PATCH(
           : null;
       const note =
         typeof row.note === "string" ? row.note.trim().slice(0, 500) || null : null;
+      const noteEn =
+        typeof row.noteEn === "string" ? row.noteEn.trim().slice(0, 500) || null : null;
       await prisma.matchPlayer.updateMany({
         where: {
           matchId,
           playerId: String(row.playerId),
         },
-        data: { rating, note },
+        data: { rating, note, noteEn },
       });
     }
     const updated = await prisma.match.findUnique({

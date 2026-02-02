@@ -37,15 +37,9 @@ Per inviare notifiche a chi ha attivato le notifiche (nuova partita creata o pag
 
 Se non imposti queste variabili, le notifiche non vengono inviate e il pulsante “Attiva notifiche” non compare in home.
 
-### Traduzione note pagelle (italiano → inglese)
+### Note pagelle bilingue
 
-Per tradurre automaticamente le note delle pagelle in inglese quando l'utente seleziona la lingua EN, serve la **chiave API Gemini**:
-
-1. Crea una chiave su [Google AI Studio](https://aistudio.google.com/apikey)
-2. In `.env` (e nelle variabili d'ambiente su **Vercel** → Settings → Environment Variables) aggiungi:
-   - `GEMINI_API_KEY` = la tua chiave API
-
-Se non imposti questa variabile, le note restano in italiano anche quando si passa a EN.
+Le pagelle hanno due campi per le note: uno in italiano e uno in inglese. Inserisci la nota in italiano e, se vuoi, incolla la traduzione nel campo inglese. In base alla lingua selezionata (IT/EN) viene mostrato il campo appropriato.
 
 ## Stack
 

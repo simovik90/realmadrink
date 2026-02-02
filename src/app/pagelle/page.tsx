@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
+
+const PAGella_PW_PREFIX = "pagella_pw";
 
 type MatchPlayer = {
   playerId: string;
@@ -12,6 +15,7 @@ type MatchPlayer = {
   goals: number;
   rating: number | null;
   note: string | null;
+  noteEn: string | null;
 };
 type Match = {
   id: string;
@@ -22,11 +26,39 @@ type Match = {
 
 export default function PagellePage() {
   const { t, lang } = useLanguage();
+  const router = useRouter();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
-  const [translatingNotes, setTranslatingNotes] = useState(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const hasExistingPagella = (m: Match) => m.players.some((p) => p.rating != null);
+
+  const handleEdit = async (m: Match) => {
+    setEditError(null);
+    if (!hasExistingPagella(m)) {
+      router.push(`/pagella/${m.id}`);
+      return;
+    }
+    const password = prompt(t("pagella.editPassword"));
+    if (password === null || password.trim() === "") return;
+    try {
+      const res = await fetch(`/api/matches/${m.id}/pagella/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+      if (res.ok) {
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(`${PAGella_PW_PREFIX}_${m.id}`, password.trim());
+        }
+        router.push(`/pagella/${m.id}`);
+      } else {
+        setEditError(t("pagella.wrongPassword"));
+      }
+    } catch {
+      setEditError(t("history.networkError"));
+    }
+  };
 
   useEffect(() => {
     fetch("/api/matches")
@@ -38,66 +70,11 @@ export default function PagellePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchTranslations = useCallback(async () => {
-    if (!matches.length || lang !== "en") return;
-    const items: { key: string; text: string }[] = [];
-    matches.forEach((m) => {
-      m.players.forEach((mp) => {
-        if (mp.note?.trim()) {
-          items.push({ key: `${m.id}-${mp.playerId}`, text: mp.note.trim() });
-        }
-      });
-    });
-    if (items.length === 0) {
-      setTranslatedNotes({});
-      setTranslateError(null);
-      return;
+  const getNoteDisplay = (_matchId: string, mp: MatchPlayer) => {
+    if (lang === "en") {
+      return (mp.noteEn?.trim() || mp.note?.trim()) || "";
     }
-    setTranslatingNotes(true);
-    setTranslatedNotes({});
-    setTranslateError(null);
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: items.map((i) => i.text) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && Array.isArray(data.translations)) {
-        const map: Record<string, string> = {};
-        items.forEach((item, i) => {
-          map[item.key] =
-            typeof data.translations[i] === "string"
-              ? String(data.translations[i]).trim()
-              : item.text;
-        });
-        setTranslatedNotes(map);
-        setTranslateError(null);
-      } else {
-        setTranslateError(data?.detail || data?.error || t("pagella.translateError"));
-      }
-    } catch {
-      setTranslatedNotes({});
-      setTranslateError(t("pagella.translateError"));
-    } finally {
-      setTranslatingNotes(false);
-    }
-  }, [matches, lang, t]);
-
-  useEffect(() => {
-    if (lang === "it") {
-      setTranslatedNotes({});
-      setTranslatingNotes(false);
-      setTranslateError(null);
-    } else {
-      fetchTranslations();
-    }
-  }, [fetchTranslations, lang]);
-
-  const getNoteDisplay = (matchId: string, mp: MatchPlayer) => {
-    if (lang !== "en") return mp.note?.trim() ?? "";
-    const key = `${matchId}-${mp.playerId}`;
-    return translatedNotes[key] ?? mp.note?.trim() ?? "";
+    return mp.note?.trim() || "";
   };
 
   const formatDate = (d: string) => {
@@ -168,9 +145,9 @@ export default function PagellePage() {
         </p>
       ) : (
         <>
-          {lang === "en" && matches.some((m) => m.players.some((mp) => mp.note?.trim())) && (
-            <p className={`text-xs mb-4 ${translateError ? "text-amber-300" : "text-sport-white/50"}`}>
-              {translatingNotes ? t("pagella.translating") : translateError || t("pagella.translateHint")}
+          {editError && (
+            <p className="mb-4 text-red-200 bg-red-900/40 px-4 py-3 rounded-xl text-sm">
+              {editError}
             </p>
           )}
           <ul className="space-y-6">
@@ -193,12 +170,13 @@ export default function PagellePage() {
                     >
                       {t("ratings.share")}
                     </button>
-                    <Link
-                      href={`/pagella/${m.id}`}
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(m)}
                       className="touch-target min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm flex items-center justify-center active:scale-95 transition"
                     >
                       {t("ratings.edit")}
-                    </Link>
+                    </button>
                   </div>
                 </div>
                 {getMVP(m) && (
@@ -224,7 +202,7 @@ export default function PagellePage() {
                               </span>
                             )}
                           </span>
-                          {(mp.rating != null || (mp.note && mp.note.trim())) && (
+                          {(mp.rating != null || (mp.note?.trim() || mp.noteEn?.trim())) && (
                             <span className="text-sport-white/70 text-xs pl-4">
                               {mp.rating != null && <span className="font-display font-semibold text-sport-orange">{mp.rating}/10</span>}
                               {mp.rating != null && (mp.note?.trim() || getNoteDisplay(m.id, mp)) && " · "}
@@ -249,7 +227,7 @@ export default function PagellePage() {
                               </span>
                             )}
                           </span>
-                          {(mp.rating != null || (mp.note && mp.note.trim())) && (
+                          {(mp.rating != null || (mp.note?.trim() || mp.noteEn?.trim())) && (
                             <span className="text-sport-white/70 text-xs pl-4">
                               {mp.rating != null && <span className="font-display font-semibold text-sport-gold">{mp.rating}/10</span>}
                               {mp.rating != null && (mp.note?.trim() || getNoteDisplay(m.id, mp)) && " · "}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -13,6 +13,7 @@ type MatchPlayer = {
   goals: number;
   rating: number | null;
   note: string | null;
+  noteEn: string | null;
 };
 type Match = {
   id: string;
@@ -29,13 +30,10 @@ export default function PagellaMatchPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ratings, setRatings] = useState<Record<string, { rating: string; note: string }>>({});
+  const [ratings, setRatings] = useState<Record<string, { rating: string; note: string; noteEn: string }>>({});
   const [canEdit, setCanEdit] = useState(false);
   const [editPassword, setEditPassword] = useState("");
   const [hadExistingPagella, setHadExistingPagella] = useState(false);
-  const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
-  const [translatingNotes, setTranslatingNotes] = useState(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!matchId) return;
@@ -47,12 +45,24 @@ export default function PagellaMatchPage() {
           setMatch(data);
           const hasExisting = (data.players as MatchPlayer[]).some((p) => p.rating != null);
           setHadExistingPagella(hasExisting);
-          setCanEdit(!hasExisting);
-          const init: Record<string, { rating: string; note: string }> = {};
+          let canEditNow = !hasExisting;
+          let pw = "";
+          if (hasExisting && typeof sessionStorage !== "undefined") {
+            const stored = sessionStorage.getItem(`pagella_pw_${matchId}`);
+            if (stored) {
+              canEditNow = true;
+              pw = stored;
+              sessionStorage.removeItem(`pagella_pw_${matchId}`);
+            }
+          }
+          setCanEdit(canEditNow);
+          setEditPassword(pw);
+          const init: Record<string, { rating: string; note: string; noteEn: string }> = {};
           data.players?.forEach((mp: MatchPlayer) => {
             init[mp.playerId] = {
               rating: mp.rating != null ? String(mp.rating) : "",
               note: mp.note ?? "",
+              noteEn: mp.noteEn ?? "",
             };
           });
           setRatings(init);
@@ -77,7 +87,7 @@ export default function PagellaMatchPage() {
     });
   };
 
-  const setPlayerRating = (playerId: string, field: "rating" | "note", value: string) => {
+  const setPlayerRating = (playerId: string, field: "rating" | "note" | "noteEn", value: string) => {
     setRatings((prev) => ({
       ...prev,
       [playerId]: {
@@ -119,6 +129,7 @@ export default function PagellaMatchPage() {
           ? Math.min(10, Math.max(1, parseInt(ratings[mp.playerId].rating, 10) || 5))
           : null,
         note: ratings[mp.playerId]?.note?.trim() || null,
+        noteEn: ratings[mp.playerId]?.noteEn?.trim() || null,
       }));
       const body: { players: typeof players; password?: string } = { players };
       if (hadExistingPagella && editPassword) body.password = editPassword;
@@ -130,11 +141,12 @@ export default function PagellaMatchPage() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setMatch(data);
-        const next: Record<string, { rating: string; note: string }> = {};
+        const next: Record<string, { rating: string; note: string; noteEn: string }> = {};
         data.players?.forEach((mp: MatchPlayer) => {
           next[mp.playerId] = {
             rating: mp.rating != null ? String(mp.rating) : "",
             note: mp.note ?? "",
+            noteEn: mp.noteEn ?? "",
           };
         });
         setRatings(next);
@@ -152,58 +164,13 @@ export default function PagellaMatchPage() {
     }
   };
 
-  const fetchTranslations = useCallback(async () => {
-    if (!match || lang !== "en") return;
-    const notesToTranslate = match.players
-      .filter((mp) => mp.note?.trim())
-      .map((mp) => ({ playerId: mp.playerId, text: mp.note!.trim() }));
-    if (notesToTranslate.length === 0) {
-      setTranslatedNotes({});
-      setTranslateError(null);
-      return;
+  const getNoteDisplay = (mp: MatchPlayer) => {
+    if (lang === "en") {
+      const en = ratings[mp.playerId]?.noteEn?.trim() ?? mp.noteEn?.trim();
+      return en || ratings[mp.playerId]?.note?.trim() || mp.note?.trim() || "";
     }
-    setTranslatingNotes(true);
-    setTranslatedNotes({});
-    setTranslateError(null);
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          texts: notesToTranslate.map((n) => n.text),
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && Array.isArray(data.translations)) {
-        const map: Record<string, string> = {};
-        notesToTranslate.forEach((n, i) => {
-          map[n.playerId] =
-            typeof data.translations[i] === "string"
-              ? String(data.translations[i]).trim()
-              : n.text;
-        });
-        setTranslatedNotes(map);
-        setTranslateError(null);
-      } else {
-        setTranslateError(data?.detail || data?.error || t("pagella.translateError"));
-      }
-    } catch {
-      setTranslatedNotes({});
-      setTranslateError(t("pagella.translateError"));
-    } finally {
-      setTranslatingNotes(false);
-    }
-  }, [match, lang, t]);
-
-  useEffect(() => {
-    if (lang === "it") {
-      setTranslatedNotes({});
-      setTranslatingNotes(false);
-      setTranslateError(null);
-    } else {
-      fetchTranslations();
-    }
-  }, [fetchTranslations, lang]);
+    return ratings[mp.playerId]?.note?.trim() ?? mp.note?.trim() ?? "";
+  };
 
   const byTeam = (m: Match) => {
     const team1 = m.players.filter((p) => p.team === 1);
@@ -313,15 +280,9 @@ export default function PagellaMatchPage() {
         <p className="mt-2 text-sport-white/60 text-sm">
           {canEdit ? t("pagella.editHelp") : t("pagella.viewHelp")}
         </p>
-        {match.players.some((mp) => mp.note?.trim()) && (
+        {match.players.some((mp) => (mp.note?.trim() || mp.noteEn?.trim())) && (
           <p className="mt-1 text-sport-white/50 text-xs">
-            {lang === "en"
-              ? translatingNotes
-                ? t("pagella.translating")
-                : translateError
-                  ? translateError
-                  : t("pagella.translateHint")
-              : t("pagella.switchToEnHint")}
+            {t("pagella.dualNoteHint")}
           </p>
         )}
       </div>
@@ -357,26 +318,36 @@ export default function PagellaMatchPage() {
                   )}
                 </div>
                 {canEdit ? (
-                  <div className="flex gap-3 items-center">
-                    <label className="sr-only">Voto</label>
-                    <select
-                      value={ratings[mp.playerId]?.rating ?? ""}
-                      onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
-                      className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-orange focus:outline-none appearance-none cursor-pointer"
-                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
-                    >
-                      <option value="">—</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                    <label className="sr-only">Nota</label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-3 items-center">
+                      <label className="sr-only">Voto</label>
+                      <select
+                        value={ratings[mp.playerId]?.rating ?? ""}
+                        onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
+                        className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-orange focus:outline-none appearance-none cursor-pointer shrink-0"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
+                      >
+                        <option value="">—</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <label className="sr-only">Nota IT</label>
+                      <input
+                        type="text"
+                        placeholder={t("pagella.notePlaceholderIt")}
+                        value={ratings[mp.playerId]?.note ?? ""}
+                        onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
+                        className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+                      />
+                    </div>
+                    <label className="sr-only">Nota EN</label>
                     <input
                       type="text"
-                      placeholder={t("pagella.notePlaceholder")}
-                      value={ratings[mp.playerId]?.note ?? ""}
-                      onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
-                      className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
+                      placeholder={t("pagella.notePlaceholderEn")}
+                      value={ratings[mp.playerId]?.noteEn ?? ""}
+                      onChange={(e) => setPlayerRating(mp.playerId, "noteEn", e.target.value)}
+                      className="min-h-[44px] px-4 rounded-xl bg-sport-white/90 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
                     />
                   </div>
                 ) : (
@@ -388,12 +359,8 @@ export default function PagellaMatchPage() {
                     ) : (
                       <span className="text-sport-white/50">—</span>
                     )}
-                    {(ratings[mp.playerId]?.note || (lang === "en" && translatedNotes[mp.playerId])) && (
-                      <span className="text-sport-white/80">
-                        {lang === "en" && translatedNotes[mp.playerId]
-                          ? translatedNotes[mp.playerId]
-                          : ratings[mp.playerId].note}
-                      </span>
+                    {getNoteDisplay(mp) && (
+                      <span className="text-sport-white/80">{getNoteDisplay(mp)}</span>
                     )}
                   </div>
                 )}
@@ -426,26 +393,36 @@ export default function PagellaMatchPage() {
                   )}
                 </div>
                 {canEdit ? (
-                  <div className="flex gap-3 items-center">
-                    <label className="sr-only">Voto</label>
-                    <select
-                      value={ratings[mp.playerId]?.rating ?? ""}
-                      onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
-                      className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-gold focus:outline-none appearance-none cursor-pointer"
-                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
-                    >
-                      <option value="">—</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                    <label className="sr-only">Nota</label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-3 items-center">
+                      <label className="sr-only">Voto</label>
+                      <select
+                        value={ratings[mp.playerId]?.rating ?? ""}
+                        onChange={(e) => setPlayerRating(mp.playerId, "rating", e.target.value)}
+                        className="w-16 min-h-[44px] pl-3 pr-8 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 focus:ring-2 focus:ring-sport-gold focus:outline-none appearance-none cursor-pointer shrink-0"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230d3b2e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
+                      >
+                        <option value="">—</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <label className="sr-only">Nota IT</label>
+                      <input
+                        type="text"
+                        placeholder={t("pagella.notePlaceholderIt")}
+                        value={ratings[mp.playerId]?.note ?? ""}
+                        onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
+                        className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-gold focus:outline-none"
+                      />
+                    </div>
+                    <label className="sr-only">Nota EN</label>
                     <input
                       type="text"
-                      placeholder={t("pagella.notePlaceholder")}
-                      value={ratings[mp.playerId]?.note ?? ""}
-                      onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
-                      className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-gold focus:outline-none"
+                      placeholder={t("pagella.notePlaceholderEn")}
+                      value={ratings[mp.playerId]?.noteEn ?? ""}
+                      onChange={(e) => setPlayerRating(mp.playerId, "noteEn", e.target.value)}
+                      className="min-h-[44px] px-4 rounded-xl bg-sport-white/90 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-gold focus:outline-none"
                     />
                   </div>
                 ) : (
@@ -457,12 +434,8 @@ export default function PagellaMatchPage() {
                     ) : (
                       <span className="text-sport-white/50">—</span>
                     )}
-                    {(ratings[mp.playerId]?.note || (lang === "en" && translatedNotes[mp.playerId])) && (
-                      <span className="text-sport-white/80">
-                        {lang === "en" && translatedNotes[mp.playerId]
-                          ? translatedNotes[mp.playerId]
-                          : ratings[mp.playerId].note}
-                      </span>
+                    {getNoteDisplay(mp) && (
+                      <span className="text-sport-white/80">{getNoteDisplay(mp)}</span>
                     )}
                   </div>
                 )}

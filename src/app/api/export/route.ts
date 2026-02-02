@@ -37,6 +37,7 @@ export async function GET() {
           goals: mp.goals,
           rating: mp.rating,
           note: mp.note,
+          noteEn: mp.noteEn,
         })),
       })),
     };

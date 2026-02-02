@@ -203,6 +203,12 @@ const DICT: Dictionary = {
   },
   "pagella.viewHelp": { it: "Voti e note della partita.", en: "Match ratings and notes." },
   "pagella.notePlaceholder": { it: "Nota opzionale", en: "Optional note" },
+  "pagella.notePlaceholderIt": { it: "Nota (italiano)", en: "Note (Italian)" },
+  "pagella.notePlaceholderEn": { it: "Nota (inglese)", en: "Note (English)" },
+  "pagella.dualNoteHint": {
+    it: "Inserisci la nota in italiano e, se vuoi, la traduzione in inglese nel secondo campo.",
+    en: "Enter the note in Italian and, if you want, the English translation in the second field.",
+  },
   "pagella.save": { it: "Salva pagella", en: "Save ratings" },
   "pagella.saving": { it: "Salvataggio...", en: "Saving..." },
   "pagella.viewAll": { it: "Vedi tutte le pagelle", en: "View all ratings" },
@@ -212,19 +218,6 @@ const DICT: Dictionary = {
   "pagella.saveError": { it: "Errore salvataggio", en: "Save error" },
   "pagella.goalkeeper": { it: "Portiere", en: "Goalkeeper" },
   "pagella.goal": { it: "goal", en: "goals" },
-  "pagella.translating": { it: "Traduzione note...", en: "Translating notes..." },
-  "pagella.translateHint": {
-    it: "Notes are translated from Italian.",
-    en: "Notes are translated from Italian.",
-  },
-  "pagella.switchToEnHint": {
-    it: "Passa a EN per tradurre le note in inglese.",
-    en: "Switch to EN to translate notes to English.",
-  },
-  "pagella.translateError": {
-    it: "Traduzione non disponibile. Verifica GEMINI_API_KEY su Vercel e fai redeploy.",
-    en: "Translation unavailable. Check GEMINI_API_KEY on Vercel and redeploy.",
-  },
   // Export
   "export.title": { it: "Backup dati", en: "Data backup" },
   "export.description": {
