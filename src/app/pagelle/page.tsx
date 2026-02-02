@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -21,9 +21,11 @@ type Match = {
 };
 
 export default function PagellePage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
+  const [translatingNotes, setTranslatingNotes] = useState(false);
 
   useEffect(() => {
     fetch("/api/matches")
@@ -34,6 +36,61 @@ export default function PagellePage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const fetchTranslations = useCallback(async () => {
+    if (!matches.length || lang !== "en") return;
+    const items: { key: string; text: string }[] = [];
+    matches.forEach((m) => {
+      m.players.forEach((mp) => {
+        if (mp.note?.trim()) {
+          items.push({ key: `${m.id}-${mp.playerId}`, text: mp.note.trim() });
+        }
+      });
+    });
+    if (items.length === 0) {
+      setTranslatedNotes({});
+      return;
+    }
+    setTranslatingNotes(true);
+    setTranslatedNotes({});
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: items.map((i) => i.text) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.translations)) {
+        const map: Record<string, string> = {};
+        items.forEach((item, i) => {
+          map[item.key] =
+            typeof data.translations[i] === "string"
+              ? String(data.translations[i]).trim()
+              : item.text;
+        });
+        setTranslatedNotes(map);
+      }
+    } catch {
+      setTranslatedNotes({});
+    } finally {
+      setTranslatingNotes(false);
+    }
+  }, [matches, lang]);
+
+  useEffect(() => {
+    if (lang === "it") {
+      setTranslatedNotes({});
+      setTranslatingNotes(false);
+    } else {
+      fetchTranslations();
+    }
+  }, [fetchTranslations, lang]);
+
+  const getNoteDisplay = (matchId: string, mp: MatchPlayer) => {
+    if (lang !== "en") return mp.note?.trim() ?? "";
+    const key = `${matchId}-${mp.playerId}`;
+    return translatedNotes[key] ?? mp.note?.trim() ?? "";
+  };
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -65,10 +122,10 @@ export default function PagellePage() {
       mvp ? `⭐ MVP: ${mvp.player.name} (${mvp.rating}/10)` : "",
       "",
       `${t("ratings.team1")}:`,
-      ...team1.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
+      ...team1.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${getNoteDisplay(m.id, mp) ? ` – ${getNoteDisplay(m.id, mp)}` : ""}`),
       "",
       `${t("ratings.team2")}:`,
-      ...team2.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
+      ...team2.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${getNoteDisplay(m.id, mp) ? ` – ${getNoteDisplay(m.id, mp)}` : ""}`),
     ].filter(Boolean);
     const text = lines.join("\n");
     navigator.clipboard?.writeText(text).then(
@@ -102,7 +159,13 @@ export default function PagellePage() {
           {t("ratings.empty")}
         </p>
       ) : (
-        <ul className="space-y-6">
+        <>
+          {lang === "en" && matches.some((m) => m.players.some((mp) => mp.note?.trim())) && (
+            <p className="text-sport-white/50 text-xs mb-4">
+              {translatingNotes ? t("pagella.translating") : t("pagella.translateHint")}
+            </p>
+          )}
+          <ul className="space-y-6">
           {matches.map((m) => {
             const { team1, team2 } = byTeam(m);
             return (
@@ -156,8 +219,8 @@ export default function PagellePage() {
                           {(mp.rating != null || (mp.note && mp.note.trim())) && (
                             <span className="text-sport-white/70 text-xs pl-4">
                               {mp.rating != null && <span className="font-display font-semibold text-sport-orange">{mp.rating}/10</span>}
-                              {mp.rating != null && mp.note?.trim() && " · "}
-                              {mp.note?.trim()}
+                              {mp.rating != null && (mp.note?.trim() || getNoteDisplay(m.id, mp)) && " · "}
+                              {getNoteDisplay(m.id, mp)}
                             </span>
                           )}
                         </li>
@@ -181,8 +244,8 @@ export default function PagellePage() {
                           {(mp.rating != null || (mp.note && mp.note.trim())) && (
                             <span className="text-sport-white/70 text-xs pl-4">
                               {mp.rating != null && <span className="font-display font-semibold text-sport-gold">{mp.rating}/10</span>}
-                              {mp.rating != null && mp.note?.trim() && " · "}
-                              {mp.note?.trim()}
+                              {mp.rating != null && (mp.note?.trim() || getNoteDisplay(m.id, mp)) && " · "}
+                              {getNoteDisplay(m.id, mp)}
                             </span>
                           )}
                         </li>
@@ -194,6 +257,7 @@ export default function PagellePage() {
             );
           })}
         </ul>
+        </>
       )}
     </main>
   );
