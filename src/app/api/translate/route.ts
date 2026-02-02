@@ -57,10 +57,7 @@ Respond with ONLY a valid JSON array, e.g. ["translation1","translation2"]`;
         const url = `${GEMINI_BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const payload = {
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.3,
-          },
+          generationConfig: { temperature: 0.3 },
         };
 
         const res = await fetch(url, {
@@ -69,22 +66,38 @@ Respond with ONLY a valid JSON array, e.g. ["translation1","translation2"]`;
           body: JSON.stringify(payload),
         });
 
-        if (!res.ok) {
-          const errBody = await res.text();
-          lastError = new Error(`Gemini ${model}: ${res.status} ${errBody.slice(0, 200)}`);
-          continue;
-        }
-
-        const data = (await res.json()) as {
+        const bodyText = await res.text();
+        let data: {
+          error?: { message?: string; code?: number };
           candidates?: Array<{
             content?: { parts?: Array<{ text?: string }> };
           }>;
         };
+        try {
+          data = JSON.parse(bodyText) as typeof data;
+        } catch {
+          lastError = new Error(`Gemini ${model}: invalid response ${bodyText.slice(0, 150)}`);
+          continue;
+        }
+
+        if (!res.ok) {
+          const msg = data.error?.message ?? JSON.stringify(data).slice(0, 300);
+          lastError = new Error(`Gemini ${model} ${res.status}: ${msg}`);
+          continue;
+        }
+
+        if (data.error?.message) {
+          lastError = new Error(`Gemini ${model}: ${data.error.message}`);
+          continue;
+        }
 
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         let raw = parts.map((p) => p.text ?? "").join("").trim();
         if (!raw) {
-          lastError = new Error(`Model ${model}: empty response`);
+          const fb = (data as { promptFeedback?: { blockReason?: string } }).promptFeedback;
+          lastError = new Error(
+            `Model ${model}: empty response${fb?.blockReason ? ` (blocked: ${fb.blockReason})` : ""}`
+          );
           continue;
         }
 
