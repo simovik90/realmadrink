@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type MatchPlayer = {
   playerId: string;
@@ -20,6 +21,7 @@ type Match = {
 };
 
 export default function PagellePage() {
+  const { t } = useLanguage();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,19 +61,19 @@ export default function PagellePage() {
     const { team1, team2 } = byTeam(m);
     const mvp = getMVP(m);
     const lines = [
-      `📝 Pagella – ${formatDate(m.date)}`,
+      `📝 ${t("pagella.title")} – ${formatDate(m.date)}`,
       mvp ? `⭐ MVP: ${mvp.player.name} (${mvp.rating}/10)` : "",
       "",
-      "Squadra 1:",
+      `${t("ratings.team1")}:`,
       ...team1.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
       "",
-      "Squadra 2:",
+      `${t("ratings.team2")}:`,
       ...team2.map((mp) => `  ${mp.player.name}${mp.goals > 0 ? ` ${mp.goals}⚽` : ""}${mp.rating != null ? ` – ${mp.rating}/10` : ""}${mp.note?.trim() ? ` – ${mp.note}` : ""}`),
     ].filter(Boolean);
     const text = lines.join("\n");
     navigator.clipboard?.writeText(text).then(
-      () => alert("Pagella copiata negli appunti!"),
-      () => alert("Copia manuale:\n\n" + text)
+      () => alert(t("ratings.shareSuccess")),
+      () => alert(t("ratings.copyManual") + "\n\n" + text)
     );
   };
 
@@ -89,15 +91,15 @@ export default function PagellePage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Pagelle</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">{t("ratings.title")}</h1>
         <div className="w-10" />
       </header>
 
       {loading ? (
-        <p className="text-sport-white/80">Caricamento...</p>
+        <p className="text-sport-white/80">{t("players.loading")}</p>
       ) : matches.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
-          Nessuna partita conclusa. Segna una partita come conclusa nello Storico partite per creare la pagella.
+          {t("ratings.empty")}
         </p>
       ) : (
         <ul className="space-y-6">
@@ -118,13 +120,13 @@ export default function PagellePage() {
                       onClick={() => copyPagella(m)}
                       className="touch-target min-h-[40px] px-3 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold text-sm border border-sport-white/30"
                     >
-                      Condividi
+                      {t("ratings.share")}
                     </button>
                     <Link
                       href={`/pagella/${m.id}`}
                       className="touch-target min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm flex items-center justify-center active:scale-95 transition"
                     >
-                      Modifica
+                      {t("ratings.edit")}
                     </Link>
                   </div>
                 </div>
@@ -138,7 +140,7 @@ export default function PagellePage() {
                 )}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="font-display font-semibold text-sport-orange mb-2">Squadra 1</p>
+                    <p className="font-display font-semibold text-sport-orange mb-2">{t("ratings.team1")}</p>
                     <ul className="space-y-1.5 text-sport-white/90">
                       {team1.map((mp) => (
                         <li key={mp.playerId} className="flex flex-col gap-0.5">
@@ -163,7 +165,7 @@ export default function PagellePage() {
                     </ul>
                   </div>
                   <div>
-                    <p className="font-display font-semibold text-sport-gold mb-2">Squadra 2</p>
+                    <p className="font-display font-semibold text-sport-gold mb-2">{t("ratings.team2")}</p>
                     <ul className="space-y-1.5 text-sport-white/90">
                       {team2.map((mp) => (
                         <li key={mp.playerId} className="flex flex-col gap-0.5">

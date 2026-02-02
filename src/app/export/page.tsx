@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function ExportPage() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -19,7 +21,7 @@ export default function ExportPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Errore durante l'export. Riprova.");
+      alert(t("export.error"));
     } finally {
       setLoading(false);
     }
@@ -39,12 +41,12 @@ export default function ExportPage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Backup dati</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">{t("export.title")}</h1>
         <div className="w-10" />
       </header>
 
       <p className="text-sport-white/80 text-sm mb-6">
-        Scarica una copia di tutti i dati (giocatori, partite, goal, pagelle) in formato JSON. Utile per fare un backup o per migrare i dati.
+        {t("export.description")}
       </p>
 
       <button
@@ -53,14 +55,14 @@ export default function ExportPage() {
         disabled={loading}
         className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition"
       >
-        {loading ? "Preparazione..." : "Scarica backup JSON"}
+        {loading ? t("export.preparing") : t("export.download")}
       </button>
 
       <Link
         href="/"
         className="mt-6 inline-block text-sport-white/80 font-display font-semibold"
       >
-        ← Torna alla home
+        {t("export.backHome")}
       </Link>
     </main>
   );

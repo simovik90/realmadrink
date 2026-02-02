@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Player = {
   id: string;
@@ -15,6 +16,7 @@ type Player = {
 };
 
 export default function GiocatoriPage() {
+  const { t } = useLanguage();
   const [players, setPlayers] = useState<Player[]>([]);
   const [name, setName] = useState("");
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
@@ -132,7 +134,7 @@ export default function GiocatoriPage() {
   };
 
   const deletePlayer = async (id: string) => {
-    if (!confirm("Eliminare questo giocatore?")) return;
+    if (!confirm(t("players.deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/players/${id}`, { method: "DELETE" });
       if (res.ok) setPlayers((prev) => prev.filter((x) => x.id !== id));
@@ -153,13 +155,13 @@ export default function GiocatoriPage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Giocatori</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">{t("players.title")}</h1>
         <div className="w-10" />
       </header>
 
       <section className="mb-8">
         <h2 className="font-display font-semibold text-sport-white text-lg mb-3">
-          {editingPlayer ? `Modifica: ${editingPlayer.name}` : "Aggiungi giocatore"}
+          {editingPlayer ? `${t("players.edit")}: ${editingPlayer.name}` : t("players.add")}
         </h2>
         <form onSubmit={addPlayer}>
           <div className="flex gap-2 mb-3">
@@ -167,7 +169,7 @@ export default function GiocatoriPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nome giocatore"
+              placeholder={t("players.namePlaceholder")}
               className="flex-1 touch-target min-h-[48px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body placeholder:text-pitch-dark/50 border-0 focus:ring-2 focus:ring-sport-orange"
               autoComplete="off"
             />
@@ -176,7 +178,7 @@ export default function GiocatoriPage() {
               disabled={!name.trim() || saving}
               className="touch-target min-h-[48px] px-5 rounded-xl bg-sport-orange text-white font-display font-semibold disabled:opacity-50 active:scale-95 transition"
             >
-              {editingPlayer ? "Salva" : "Aggiungi"}
+              {editingPlayer ? t("players.save") : t("players.addBtn")}
             </button>
             {editingPlayer && (
               <button
@@ -184,13 +186,13 @@ export default function GiocatoriPage() {
                 onClick={cancelEditing}
                 className="touch-target min-h-[48px] px-4 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold border border-sport-white/30 active:scale-95 transition"
               >
-                Annulla
+                {t("players.cancel")}
               </button>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <label className="text-sport-white font-body text-sm">
-              Età (anni)
+              {t("players.age")}
               <input
                 type="number"
                 min={1}
@@ -202,7 +204,7 @@ export default function GiocatoriPage() {
               />
             </label>
             <label className="text-sport-white font-body text-sm">
-              Sport (volte/settimana)
+              {t("players.sportPerWeek")}
               <input
                 type="number"
                 min={0}
@@ -221,7 +223,7 @@ export default function GiocatoriPage() {
               onChange={(e) => setPracticesSport(e.target.checked)}
               className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
             />
-            <span className="text-sport-white font-body">Pratica qualche sport</span>
+            <span className="text-sport-white font-body">{t("players.practicesSport")}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer touch-target min-h-[44px] mb-2">
             <input
@@ -230,11 +232,11 @@ export default function GiocatoriPage() {
               onChange={(e) => setHasPlayedFootball(e.target.checked)}
               className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
             />
-            <span className="text-sport-white font-body">Ha già giocato a calcio</span>
+            <span className="text-sport-white font-body">{t("players.hasPlayedFootball")}</span>
           </label>
           {hasPlayedFootball && (
             <label className="text-sport-white font-body text-sm block mb-3">
-              Quanti anni fa?
+              {t("players.yearsAgo")}
               <input
                 type="number"
                 min={0}
@@ -253,7 +255,7 @@ export default function GiocatoriPage() {
               onChange={(e) => setIsGoalkeeper(e.target.checked)}
               className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
             />
-            <span className="text-sport-white font-body">Portiere</span>
+            <span className="text-sport-white font-body">{t("players.goalkeeper")}</span>
           </label>
           {error && (
             <p className="mt-3 text-sm text-red-200 bg-red-900/40 px-3 py-2 rounded-lg" role="alert">
@@ -264,14 +266,14 @@ export default function GiocatoriPage() {
       </section>
 
       <section>
-        <h2 className="font-display font-semibold text-sport-white text-lg mb-1">Gestisci giocatori</h2>
+        <h2 className="font-display font-semibold text-sport-white text-lg mb-1">{t("players.manage")}</h2>
         <p className="text-sport-white/80 text-sm mb-4">
-          Tocca <strong>Modifica</strong> per cambiare nome e dati, o il pallino per segnare il portiere.
+          {t("players.manageHelp")}
         </p>
         {loading ? (
-          <p className="text-sport-white/80">Caricamento...</p>
+          <p className="text-sport-white/80">{t("players.loading")}</p>
         ) : players.length === 0 ? (
-          <p className="text-sport-white/80 text-center py-8">Nessun giocatore. Aggiungine uno sopra.</p>
+          <p className="text-sport-white/80 text-center py-8">{t("players.empty")}</p>
         ) : (
           <ul className="space-y-2">
             {players.map((p) => (
@@ -292,9 +294,9 @@ export default function GiocatoriPage() {
                   onClick={() => startEditing(p)}
                   disabled={editingPlayer?.id === p.id}
                   className="flex-shrink-0 min-h-[44px] px-3 rounded-lg font-display font-semibold text-sm bg-sport-white/25 text-sport-white border border-sport-white/30 transition active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
-                  title="Modifica giocatore"
+                  title={t("players.editPlayer")}
                 >
-                  Modifica
+                  {t("players.edit")}
                 </button>
                 <button
                   type="button"
@@ -304,10 +306,10 @@ export default function GiocatoriPage() {
                       ? "bg-sport-orange text-white"
                       : "bg-sport-white/25 text-sport-white border border-sport-white/30"
                   }`}
-                  title={p.isGoalkeeper ? "Portiere (tocca per togliere)" : "Tocca per segnare come portiere"}
+                  title={p.isGoalkeeper ? t("players.goalkeeperTitle") : t("players.goalkeeperTitleOff")}
                 >
                   <span>🧤</span>
-                  <span>{p.isGoalkeeper ? "Portiere" : "Segna portiere"}</span>
+                  <span>{p.isGoalkeeper ? t("players.goalkeeper") : t("players.markGoalkeeper")}</span>
                 </button>
                 <button
                   type="button"

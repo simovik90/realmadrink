@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ClassificaEntry = { playerId: string; name: string; goals: number; presenze: number; score: number };
 
 type PeriodFilter = "all" | "30" | "5";
 
 export default function ClassificaPage() {
+  const { t } = useLanguage();
   const [list, setList] = useState<ClassificaEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,23 +43,24 @@ export default function ClassificaPage() {
   }, [fetchClassifica]);
 
   const shareText = useCallback(() => {
+    const periodLabel = period === "30" ? t("standings.sharePeriod30") : period === "5" ? t("standings.sharePeriod5") : "";
     const lines = [
-      "🏆 Classifica RealMadrink",
-      period === "30" ? "(Ultimi 30 giorni)" : period === "5" ? "(Ultime 5 partite)" : "",
+      `🏆 ${t("standings.shareTitle")}`,
+      periodLabel,
       "",
       ...list.slice(0, 20).map((e, i) => {
         const media = e.presenze > 0 ? (e.goals / e.presenze).toFixed(1) : "0";
-        return `${i + 1}. ${e.name} – ${e.goals} goal (${media}/partita), score ${e.score}`;
+        return `${i + 1}. ${e.name} – ${e.goals} goal (${media}${t("standings.perMatch")}), score ${e.score}`;
       }),
     ].filter(Boolean);
     return lines.join("\n");
-  }, [list, period]);
+  }, [list, period, t]);
 
   const handleCondividi = useCallback(() => {
     const text = shareText();
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(
-        () => alert("Classifica copiata negli appunti! Incollala dove vuoi condividerla."),
+        () => alert(t("standings.shareSuccess")),
         () => fallbackCopy(text)
       );
     } else {
@@ -74,7 +77,7 @@ export default function ClassificaPage() {
     ta.select();
     try {
       document.execCommand("copy");
-      alert("Classifica copiata negli appunti!");
+      alert(t("standings.shareSuccess"));
     } catch {
       alert("Copia manuale:\n\n" + text.slice(0, 200) + "...");
     }
@@ -95,20 +98,20 @@ export default function ClassificaPage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Classifica</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">{t("standings.title")}</h1>
         <div className="w-10" />
       </header>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <span className="text-sport-white/80 text-sm">Periodo:</span>
+        <span className="text-sport-white/80 text-sm">{t("standings.period")}</span>
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
           className="min-h-[40px] px-3 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 focus:ring-2 focus:ring-sport-orange focus:outline-none"
         >
-          <option value="all">Tutte</option>
-          <option value="30">Ultimi 30 giorni</option>
-          <option value="5">Ultime 5 partite</option>
+          <option value="all">{t("history.all")}</option>
+          <option value="30">{t("history.last30")}</option>
+          <option value="5">{t("standings.last5")}</option>
         </select>
         {list.length > 0 && (
           <button
@@ -116,7 +119,7 @@ export default function ClassificaPage() {
             onClick={handleCondividi}
             className="min-h-[40px] px-4 rounded-xl bg-sport-orange text-white font-display font-semibold text-sm"
           >
-            Condividi
+            {t("standings.share")}
           </button>
         )}
       </div>
@@ -129,16 +132,16 @@ export default function ClassificaPage() {
         </p>
       ) : list.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
-          Nessun giocatore con partite nel periodo scelto.
+          {t("standings.empty")}
         </p>
       ) : (
         <div className="rounded-2xl bg-sport-white/10 border border-sport-white/20 overflow-hidden" id="classifica-table">
           <div className="grid grid-cols-12 gap-1 px-3 py-2 bg-sport-white/20 font-display font-semibold text-sport-white text-xs">
             <span className="col-span-1 text-center">#</span>
-            <span className="col-span-3">Giocatore</span>
+            <span className="col-span-3">{t("standings.player")}</span>
             <span className="col-span-1 text-center">G</span>
             <span className="col-span-1 text-center">M</span>
-            <span className="col-span-2 text-center">Pres.</span>
+            <span className="col-span-2 text-center">{t("standings.presenze")}</span>
             <span className="col-span-2 text-center">Score</span>
           </div>
           <ul className="divide-y divide-sport-white/10">

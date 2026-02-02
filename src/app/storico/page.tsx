@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type MatchPlayer = {
   playerId: string;
@@ -22,6 +23,7 @@ type Match = {
 type PeriodFilter = "all" | "30" | "90";
 
 export default function StoricoPage() {
+  const { t } = useLanguage();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>("all");
@@ -108,16 +110,16 @@ export default function StoricoPage() {
         );
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data?.error || "Errore.");
+        alert(data?.error || t("history.error"));
       }
     } catch {
-      alert("Errore di rete.");
+      alert(t("history.networkError"));
     }
   };
 
   const deleteMatch = async (matchId: string) => {
-    if (!confirm("Eliminare questa partita? I goal assegnati non conteranno più in classifica.")) return;
-    const password = prompt("Inserisci la password RealMadrink per confermare:");
+    if (!confirm(t("history.deleteConfirm"))) return;
+    const password = prompt(t("history.deletePassword"));
     if (password === null) return;
     try {
       const res = await fetch(`/api/matches/${matchId}`, {
@@ -128,10 +130,10 @@ export default function StoricoPage() {
       if (res.ok) setMatches((prev) => prev.filter((m) => m.id !== matchId));
       else {
         const data = await res.json().catch(() => ({}));
-        alert(data?.error === "Password errata" ? "Password errata." : "Errore durante l'eliminazione.");
+        alert(data?.error === "Password errata" ? t("history.deleteError") : t("history.deleteFail"));
       }
     } catch {
-      alert("Errore di rete.");
+      alert(t("history.networkError"));
     }
   };
 
@@ -149,32 +151,32 @@ export default function StoricoPage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Storico partite</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">{t("history.title")}</h1>
         <div className="w-10" />
       </header>
 
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-sport-white/80 text-sm">Periodo:</span>
+        <span className="text-sport-white/80 text-sm">{t("history.period")}</span>
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
           className="min-h-[40px] px-3 rounded-xl bg-sport-white/20 text-sport-white font-body text-sm border border-sport-white/30 focus:ring-2 focus:ring-sport-orange focus:outline-none"
         >
-          <option value="all">Tutte</option>
-          <option value="30">Ultimi 30 giorni</option>
-          <option value="90">Ultimi 3 mesi</option>
+          <option value="all">{t("history.all")}</option>
+          <option value="30">{t("history.last30")}</option>
+          <option value="90">{t("history.last90")}</option>
         </select>
       </div>
 
       {loading ? (
-        <p className="text-sport-white/80">Caricamento...</p>
+        <p className="text-sport-white/80">{t("players.loading")}</p>
       ) : matches.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
-          Nessuna partita salvata. Crea una partita e salvala per vederla qui.
+          {t("history.empty")}
         </p>
       ) : filteredMatches.length === 0 ? (
         <p className="text-sport-white/80 text-center py-12">
-          Nessuna partita nel periodo selezionato.
+          {t("history.emptyPeriod")}
         </p>
       ) : (
         <ul className="space-y-4">
@@ -192,7 +194,7 @@ export default function StoricoPage() {
                     </p>
                     {m.concluded && (
                       <span className="px-2 py-0.5 rounded-full bg-sport-white/25 text-sport-white text-xs font-display font-semibold">
-                        Conclusa
+                        {t("history.concluded")}
                       </span>
                     )}
                   </div>
@@ -208,7 +210,7 @@ export default function StoricoPage() {
                 </div>
                 {!m.concluded && (
                   <p className="text-sport-white/70 text-xs mb-2">
-                    Tocca ⚽ per aggiungere un goal
+                    {t("history.tapGoal")}
                   </p>
                 )}
                 {!m.concluded && (
@@ -217,7 +219,7 @@ export default function StoricoPage() {
                     onClick={() => markConcluded(m.id)}
                     className="w-full touch-target min-h-[44px] mb-3 rounded-xl bg-sport-orange text-white font-display font-semibold active:scale-[0.98] transition"
                   >
-                    Partita conclusa
+                    {t("history.markConcluded")}
                   </button>
                 )}
                 {m.concluded && (
@@ -225,16 +227,16 @@ export default function StoricoPage() {
                     href={`/pagella/${m.id}`}
                     className="w-full touch-target min-h-[44px] mb-3 rounded-xl bg-sport-white/25 text-sport-white font-display font-semibold border border-sport-white/30 flex items-center justify-center active:scale-[0.98] transition"
                   >
-                    {hasPagella(m) ? "Visualizza pagella" : "Crea pagella"}
+                    {hasPagella(m) ? t("history.viewPagella") : t("history.createPagella")}
                   </Link>
                 )}
                 {(() => {
                   const { g1, g2 } = matchResult(m);
                   return (
                     <p className="text-center font-display font-bold text-sport-white text-lg mb-3">
-                      Squadra 1 <span className="text-sport-orange">{g1}</span>
+                      {t("history.team1")} <span className="text-sport-orange">{g1}</span>
                       {" – "}
-                      <span className="text-sport-gold">{g2}</span> Squadra 2
+                      <span className="text-sport-gold">{g2}</span> {t("history.team2")}
                     </p>
                   );
                 })()}
@@ -250,7 +252,7 @@ export default function StoricoPage() {
                 )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="font-display font-semibold text-sport-orange mb-1">Squadra 1</p>
+                    <p className="font-display font-semibold text-sport-orange mb-1">{t("history.team1")}</p>
                     <ul className="text-sport-white/90 space-y-1">
                       {team1.map((mp) => (
                         <li key={mp.playerId} className="flex items-center gap-2">
@@ -265,8 +267,8 @@ export default function StoricoPage() {
                               type="button"
                               onClick={() => addGoal(m.id, mp.playerId)}
                               className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
-                              title="Aggiungi goal"
-                              aria-label="Aggiungi goal"
+                              title={t("history.addGoal")}
+                              aria-label={t("history.addGoal")}
                             >
                               ⚽
                             </button>
@@ -280,7 +282,7 @@ export default function StoricoPage() {
                     </ul>
                   </div>
                   <div>
-                    <p className="font-display font-semibold text-sport-gold mb-1">Squadra 2</p>
+                    <p className="font-display font-semibold text-sport-gold mb-1">{t("history.team2")}</p>
                     <ul className="text-sport-white/90 space-y-1">
                       {team2.map((mp) => (
                         <li key={mp.playerId} className="flex items-center gap-2">
@@ -295,8 +297,8 @@ export default function StoricoPage() {
                               type="button"
                               onClick={() => addGoal(m.id, mp.playerId)}
                               className="touch-target min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-sport-white/20 hover:bg-sport-orange/50 transition"
-                              title="Aggiungi goal"
-                              aria-label="Aggiungi goal"
+                              title={t("history.addGoal")}
+                              aria-label={t("history.addGoal")}
                             >
                               ⚽
                             </button>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type MatchPlayer = {
   playerId: string;
@@ -23,6 +24,7 @@ type Match = {
 export default function PagellaMatchPage() {
   const params = useParams();
   const matchId = params?.matchId as string;
+  const { t, lang } = useLanguage();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,7 @@ export default function PagellaMatchPage() {
   const [canEdit, setCanEdit] = useState(false);
   const [editPassword, setEditPassword] = useState("");
   const [hadExistingPagella, setHadExistingPagella] = useState(false);
+  const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!matchId) return;
@@ -53,15 +56,15 @@ export default function PagellaMatchPage() {
           setRatings(init);
         } else {
           setMatch(null);
-          setError("Partita non trovata");
+          setError(t("pagella.notFound"));
         }
       })
       .catch(() => {
         setMatch(null);
-        setError("Errore di connessione");
+        setError(t("pagella.connectionError"));
       })
       .finally(() => setLoading(false));
-  }, [matchId]);
+  }, [matchId, t]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -83,7 +86,7 @@ export default function PagellaMatchPage() {
   };
 
   const requestModifica = async () => {
-    const password = prompt("Inserisci la password per modificare la pagella:");
+    const password = prompt(t("pagella.editPassword"));
     if (password === null || password.trim() === "") return;
     setError(null);
     try {
@@ -96,10 +99,10 @@ export default function PagellaMatchPage() {
         setCanEdit(true);
         setEditPassword(password.trim());
       } else {
-        setError("Password errata.");
+        setError(t("pagella.wrongPassword"));
       }
     } catch {
-      setError("Errore di rete.");
+      setError(t("history.networkError"));
     }
   };
 
@@ -134,18 +137,51 @@ export default function PagellaMatchPage() {
         });
         setRatings(next);
       } else {
-        setError(data?.error || "Errore salvataggio");
+        setError(data?.error || t("pagella.saveError"));
         if (res.status === 403) {
           setEditPassword("");
           setCanEdit(false);
         }
       }
     } catch {
-      setError("Errore di rete.");
+      setError(t("history.networkError"));
     } finally {
       setSaving(false);
     }
   };
+
+  const fetchTranslations = useCallback(async () => {
+    if (!match || lang !== "en") return;
+    const notesToTranslate = match.players
+      .filter((mp) => mp.note?.trim())
+      .map((mp) => ({ playerId: mp.playerId, text: mp.note!.trim() }));
+    if (notesToTranslate.length === 0) return;
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          texts: notesToTranslate.map((n) => n.text),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const translations = (data.translations as string[]) || [];
+        const map: Record<string, string> = {};
+        notesToTranslate.forEach((n, i) => {
+          map[n.playerId] = translations[i] ?? n.text;
+        });
+        setTranslatedNotes(map);
+      }
+    } catch {
+      setTranslatedNotes({});
+    }
+  }, [match, lang]);
+
+  useEffect(() => {
+    if (lang === "it") setTranslatedNotes({});
+    else fetchTranslations();
+  }, [fetchTranslations, lang]);
 
   const byTeam = (m: Match) => {
     const team1 = m.players.filter((p) => p.team === 1);
@@ -181,7 +217,7 @@ export default function PagellaMatchPage() {
           >
             ←
           </Link>
-          <h1 className="font-display font-bold text-2xl text-sport-white">Pagella</h1>
+          <h1 className="font-display font-bold text-2xl text-sport-white">{t("pagella.title")}</h1>
           <div className="w-10" />
         </header>
         <p className="text-red-200 bg-red-900/40 px-4 py-3 rounded-xl text-center">
@@ -191,7 +227,7 @@ export default function PagellaMatchPage() {
           href="/storico"
           className="mt-4 inline-block touch-target min-h-[48px] px-6 rounded-xl bg-sport-white/20 text-sport-white font-display font-semibold flex items-center justify-center"
         >
-          Torna allo storico
+          {t("pagella.backToHistory")}
         </Link>
       </main>
     );
@@ -212,17 +248,17 @@ export default function PagellaMatchPage() {
           >
             ←
           </Link>
-          <h1 className="font-display font-bold text-2xl text-sport-white">Pagella</h1>
+          <h1 className="font-display font-bold text-2xl text-sport-white">{t("pagella.title")}</h1>
           <div className="w-10" />
         </header>
         <p className="text-sport-white/80 text-center py-8">
-          La partita deve essere segnata come conclusa prima di compilare la pagella.
+          {t("pagella.mustConclude")}
         </p>
         <Link
           href="/storico"
           className="inline-block touch-target min-h-[48px] px-6 rounded-xl bg-sport-white/20 text-sport-white font-display font-semibold flex items-center justify-center"
         >
-          Torna allo storico
+          {t("pagella.backToHistory")}
         </Link>
       </main>
     );
@@ -253,9 +289,7 @@ export default function PagellaMatchPage() {
           {formatDate(match.date)}
         </p>
         <p className="mt-2 text-sport-white/60 text-sm">
-          {canEdit
-            ? "Assegna un voto da 1 a 10 e, se vuoi, una nota per ogni giocatore."
-            : "Voti e note della partita."}
+          {canEdit ? t("pagella.editHelp") : t("pagella.viewHelp")}
         </p>
       </div>
 
@@ -269,14 +303,14 @@ export default function PagellaMatchPage() {
         {/* Squadra 1 */}
         <section className="rounded-2xl bg-sport-white/10 backdrop-blur-sm border border-sport-white/20 overflow-hidden shadow-lg">
           <div className="px-4 py-3 bg-sport-orange/20 border-b border-sport-white/15">
-            <h2 className="font-display font-bold text-lg text-sport-orange">Squadra 1</h2>
+            <h2 className="font-display font-bold text-lg text-sport-orange">{t("history.team1")}</h2>
           </div>
           <ul className="divide-y divide-sport-white/10">
             {team1.map((mp) => (
               <li key={mp.playerId} className="px-4 py-4">
                 <div className="flex items-center gap-2 mb-2">
                   {mp.isGoalkeeper && (
-                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title="Portiere">
+                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title={t("pagella.goalkeeper")}>
                       🧤
                     </span>
                   )}
@@ -285,7 +319,7 @@ export default function PagellaMatchPage() {
                   </span>
                   {mp.goals > 0 && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-sport-orange/25 text-sport-orange font-display font-semibold text-xs">
-                      {mp.goals} goal
+                      {mp.goals} {t("pagella.goal")}
                     </span>
                   )}
                 </div>
@@ -306,7 +340,7 @@ export default function PagellaMatchPage() {
                     <label className="sr-only">Nota</label>
                     <input
                       type="text"
-                      placeholder="Nota opzionale"
+                      placeholder={t("pagella.notePlaceholder")}
                       value={ratings[mp.playerId]?.note ?? ""}
                       onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
                       className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-orange focus:outline-none"
@@ -321,8 +355,12 @@ export default function PagellaMatchPage() {
                     ) : (
                       <span className="text-sport-white/50">—</span>
                     )}
-                    {ratings[mp.playerId]?.note && (
-                      <span className="text-sport-white/80">{ratings[mp.playerId].note}</span>
+                    {(ratings[mp.playerId]?.note || (lang === "en" && translatedNotes[mp.playerId])) && (
+                      <span className="text-sport-white/80">
+                        {lang === "en" && translatedNotes[mp.playerId]
+                          ? translatedNotes[mp.playerId]
+                          : ratings[mp.playerId].note}
+                      </span>
                     )}
                   </div>
                 )}
@@ -334,14 +372,14 @@ export default function PagellaMatchPage() {
         {/* Squadra 2 */}
         <section className="rounded-2xl bg-sport-white/10 backdrop-blur-sm border border-sport-white/20 overflow-hidden shadow-lg">
           <div className="px-4 py-3 bg-sport-gold/20 border-b border-sport-white/15">
-            <h2 className="font-display font-bold text-lg text-sport-gold">Squadra 2</h2>
+            <h2 className="font-display font-bold text-lg text-sport-gold">{t("history.team2")}</h2>
           </div>
           <ul className="divide-y divide-sport-white/10">
             {team2.map((mp) => (
               <li key={mp.playerId} className="px-4 py-4">
                 <div className="flex items-center gap-2 mb-2">
                   {mp.isGoalkeeper && (
-                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title="Portiere">
+                    <span className="flex items-center justify-center w-6 h-6 rounded bg-sport-white/20 text-xs" title={t("pagella.goalkeeper")}>
                       🧤
                     </span>
                   )}
@@ -350,7 +388,7 @@ export default function PagellaMatchPage() {
                   </span>
                   {mp.goals > 0 && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-sport-gold/25 text-sport-gold font-display font-semibold text-xs">
-                      {mp.goals} goal
+                      {mp.goals} {t("pagella.goal")}
                     </span>
                   )}
                 </div>
@@ -371,7 +409,7 @@ export default function PagellaMatchPage() {
                     <label className="sr-only">Nota</label>
                     <input
                       type="text"
-                      placeholder="Nota opzionale"
+                      placeholder={t("pagella.notePlaceholder")}
                       value={ratings[mp.playerId]?.note ?? ""}
                       onChange={(e) => setPlayerRating(mp.playerId, "note", e.target.value)}
                       className="flex-1 min-h-[44px] px-4 rounded-xl bg-sport-white/95 text-pitch-dark font-body text-sm border-0 placeholder:text-pitch-dark/50 focus:ring-2 focus:ring-sport-gold focus:outline-none"
@@ -386,8 +424,12 @@ export default function PagellaMatchPage() {
                     ) : (
                       <span className="text-sport-white/50">—</span>
                     )}
-                    {ratings[mp.playerId]?.note && (
-                      <span className="text-sport-white/80">{ratings[mp.playerId].note}</span>
+                    {(ratings[mp.playerId]?.note || (lang === "en" && translatedNotes[mp.playerId])) && (
+                      <span className="text-sport-white/80">
+                        {lang === "en" && translatedNotes[mp.playerId]
+                          ? translatedNotes[mp.playerId]
+                          : ratings[mp.playerId].note}
+                      </span>
                     )}
                   </div>
                 )}
@@ -406,13 +448,13 @@ export default function PagellaMatchPage() {
               disabled={saving}
               className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl disabled:opacity-50 active:scale-[0.98] transition shadow-lg shadow-sport-orange/20"
             >
-              {saving ? "Salvataggio..." : "Salva pagella"}
+              {saving ? t("pagella.saving") : t("pagella.save")}
             </button>
             <Link
               href="/pagelle"
               className="block w-full text-center touch-target min-h-[48px] flex items-center justify-center rounded-xl text-sport-white/90 font-display font-semibold hover:text-sport-white transition"
             >
-              Vedi tutte le pagelle
+              {t("pagella.viewAll")}
             </Link>
           </>
         ) : (
@@ -422,13 +464,13 @@ export default function PagellaMatchPage() {
               onClick={requestModifica}
               className="w-full touch-target min-h-[56px] rounded-2xl bg-sport-orange text-white font-display font-bold text-xl active:scale-[0.98] transition shadow-lg shadow-sport-orange/20"
             >
-              Modifica pagella
+              {t("pagella.editBtn")}
             </button>
             <Link
               href="/pagelle"
               className="block w-full text-center touch-target min-h-[48px] flex items-center justify-center rounded-xl text-sport-white/90 font-display font-semibold hover:text-sport-white transition"
             >
-              Vedi tutte le pagelle
+              {t("pagella.viewAll")}
             </Link>
           </>
         )}

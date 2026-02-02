@@ -11,6 +11,7 @@ import {
   type PlayerWithScore,
   type BasePlayer,
 } from "@/lib/score";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Player = {
   id: string;
@@ -56,6 +57,7 @@ export default function PartitaPage() {
     teamsRef.current = teams;
   }, [teams]);
   const [savedSummary, setSavedSummary] = useState<{ team1: TeamEntry[]; team2: TeamEntry[]; date: string } | null>(null);
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     fetch("/api/players")
@@ -131,11 +133,11 @@ export default function PartitaPage() {
   const suggestTeams = () => {
     const selected = players.filter((p) => selectedIds.has(p.id));
     if (selected.length < 2) {
-      alert("Seleziona almeno 2 giocatori.");
+      alert(t("match.alert.minPlayers"));
       return;
     }
     if (selected.length % 2 !== 0) {
-      alert("Seleziona un numero pari di giocatori per avere squadre con lo stesso numero.");
+      alert(t("match.alert.evenPlayers"));
       return;
     }
     setGenerating(true);
@@ -232,11 +234,11 @@ export default function PartitaPage() {
     // Usa sempre l’ultimo stato delle squadre (evita chiusura obsoleta al clic)
     const teamsToSave = customTeams ?? teamsRef.current ?? teams;
     if (!teamsToSave) {
-      alert("Nessuna squadra da salvare. Genera le squadre e riprova.");
+      alert(t("match.alert.noTeams"));
       return;
     }
     if (!date || !date.trim()) {
-      alert("Inserisci la data della partita.");
+      alert(t("match.alert.noDate"));
       return;
     }
     // In produzione/minificazione team1/team2 possono non passare Array.isArray(); usiamo Array.from per avere array veri
@@ -259,11 +261,11 @@ export default function PartitaPage() {
           t1 = r1;
           t2 = r2;
         } else {
-          alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
+          alert(t("match.alert.invalidTeams"));
           return;
         }
       } catch {
-        alert("Dati squadre non validi. Clicca «Suggerisci squadre» e riprova.");
+        alert(t("match.alert.invalidTeams"));
         return;
       }
     }
@@ -327,7 +329,9 @@ export default function PartitaPage() {
         >
           ←
         </Link>
-        <h1 className="font-display font-bold text-2xl text-sport-white">Crea partita</h1>
+        <h1 className="font-display font-bold text-2xl text-sport-white">
+          {t("match.title")}
+        </h1>
         <div className="w-10" />
       </header>
 
@@ -336,7 +340,9 @@ export default function PartitaPage() {
       {!generating && (
         <>
           <div className="mb-6">
-            <label className="block font-display font-semibold text-sport-white mb-2">Data partita</label>
+            <label className="block font-display font-semibold text-sport-white mb-2">
+              {t("match.date.label")}
+            </label>
             <input
               type="date"
               value={date}
@@ -352,12 +358,14 @@ export default function PartitaPage() {
               onChange={(e) => setNoGoalkeepers(e.target.checked)}
               className="w-5 h-5 rounded border-2 border-sport-white accent-sport-orange"
             />
-            <span className="text-sport-white font-body">Senza portieri ufficiale</span>
+            <span className="text-sport-white font-body">
+              {t("match.noGoalkeepers.label")}
+            </span>
           </label>
           <p className="text-sport-white/80 text-sm -mt-4 mb-4 px-1">
             {noGoalkeepers
-              ? "Le squadre saranno formate a caso, senza ruoli portiere."
-              : "Un portiere per squadra (se presenti tra i giocatori)."}
+              ? t("match.noGoalkeepers.help.on")
+              : t("match.noGoalkeepers.help.off")}
           </p>
 
           <div className="mb-2 flex items-center justify-between">
@@ -369,7 +377,9 @@ export default function PartitaPage() {
               onClick={selectAll}
               className="text-sm text-sport-orange font-display font-semibold touch-target py-2 px-3"
             >
-              {selectedIds.size === players.length ? "Deseleziona tutti" : "Seleziona tutti"}
+              {selectedIds.size === players.length
+                ? t("match.deselectAll")
+                : t("match.selectAll")}
             </button>
           </div>
 
@@ -398,9 +408,9 @@ export default function PartitaPage() {
             </button>
           </div>
 
-          {loading ? (
-            <p className="text-sport-white/80">Caricamento giocatori...</p>
-          ) : (
+      {loading ? (
+        <p className="text-sport-white/80">{t("match.loadingPlayers")}</p>
+      ) : (
             <ul className="space-y-2 mb-6">
               {players.map((p) => (
                 <li key={p.id}>
