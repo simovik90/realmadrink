@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AddToHome } from "@/components/AddToHome";
 import { NotifySubscribe } from "@/components/NotifySubscribe";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type MatchPlayer = { team: number; goals: number };
 type Match = { id: string; date: string; players: MatchPlayer[] };
 
 export default function HomePage() {
   const [lastMatch, setLastMatch] = useState<Match | null>(null);
+  const { lang, t } = useLanguage();
 
   useEffect(() => {
     fetch("/api/matches", { cache: "no-store" })
@@ -29,6 +31,8 @@ export default function HomePage() {
       return { g1, g2, date: lastMatch.date };
     })();
 
+  const locale = lang === "it" ? "it-IT" : "en-GB";
+
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center px-4 py-8 safe-top safe-bottom">
       <div className="text-center mb-12">
@@ -38,9 +42,9 @@ export default function HomePage() {
           className="h-20 w-auto object-contain mx-auto mb-4"
         />
         <h1 className="font-display font-bold text-4xl sm:text-5xl text-sport-white drop-shadow-lg mb-2">
-          RealMadrink
+          {t("nav.home.title")}
         </h1>
-        <p className="text-sport-white/90 text-lg">Squadre di calcetto in un tap</p>
+        <p className="text-sport-white/90 text-lg">{t("nav.home.subtitle")}</p>
       </div>
 
       {lastResult && (
@@ -48,14 +52,14 @@ export default function HomePage() {
           href="/storico"
           className="w-full max-w-sm mb-6 rounded-2xl bg-sport-white/15 border border-sport-white/25 px-4 py-3 text-center"
         >
-          <p className="text-sport-white/70 text-sm">Ultima partita</p>
+          <p className="text-sport-white/70 text-sm">{t("home.lastMatch")}</p>
           <p className="font-display font-bold text-sport-white text-xl">
             Squadra 1 <span className="text-sport-orange">{lastResult.g1}</span>
             {" – "}
             <span className="text-sport-gold">{lastResult.g2}</span> Squadra 2
           </p>
           <p className="text-sport-white/60 text-xs mt-1">
-            {new Date(lastResult.date).toLocaleDateString("it-IT", {
+            {new Date(lastResult.date).toLocaleDateString(locale, {
               day: "numeric",
               month: "short",
               year: "numeric",
@@ -70,42 +74,42 @@ export default function HomePage() {
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-sport-white text-pitch-dark font-display font-semibold text-lg shadow-xl active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">👥</span>
-          Gestione giocatori
+          {t("nav.players")}
         </Link>
         <Link
           href="/partita"
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-sport-orange text-white font-display font-semibold text-lg shadow-xl active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">⚽</span>
-          Crea partita
+          {t("nav.match")}
         </Link>
         <Link
           href="/classifica"
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/60 text-sport-white font-display font-semibold text-lg active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">🏆</span>
-          Classifica
+          {t("nav.standings")}
         </Link>
         <Link
           href="/storico"
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/60 text-sport-white font-display font-semibold text-lg active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">📋</span>
-          Storico partite
+          {t("nav.history")}
         </Link>
         <Link
           href="/pagelle"
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/60 text-sport-white font-display font-semibold text-lg active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">📝</span>
-          Pagelle
+          {t("nav.ratings")}
         </Link>
         <Link
           href="/export"
           className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/40 text-sport-white/90 font-display font-semibold text-lg active:scale-[0.98] transition-transform"
         >
           <span className="text-2xl">💾</span>
-          Backup dati
+          {t("nav.export")}
         </Link>
       </nav>
 
@@ -114,3 +118,4 @@ export default function HomePage() {
     </main>
   );
 }
+
