@@ -140,7 +140,7 @@ export default function ClassificaPage() {
             <span className="col-span-1 text-center">#</span>
             <span className="col-span-3">{t("standings.player")}</span>
             <span className="col-span-1 text-center">G</span>
-            <span className="col-span-1 text-center">M</span>
+            <span className="col-span-1 text-center">{t("standings.media")}</span>
             <span className="col-span-2 text-center">{t("standings.presenze")}</span>
             <span className="col-span-2 text-center">Score</span>
           </div>

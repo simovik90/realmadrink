@@ -167,6 +167,7 @@ const DICT: Dictionary = {
   "standings.share": { it: "Condividi", en: "Share" },
   "standings.player": { it: "Giocatore", en: "Player" },
   "standings.presenze": { it: "Pres.", en: "App." },
+  "standings.media": { it: "M", en: "AVG" },
   "standings.empty": { it: "Nessun giocatore con partite nel periodo scelto.", en: "No players with matches in selected period." },
   "standings.shareSuccess": {
     it: "Classifica copiata negli appunti! Incollala dove vuoi condividerla.",
