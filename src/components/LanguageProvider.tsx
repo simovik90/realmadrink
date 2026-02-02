@@ -212,6 +212,15 @@ const DICT: Dictionary = {
   "pagella.saveError": { it: "Errore salvataggio", en: "Save error" },
   "pagella.goalkeeper": { it: "Portiere", en: "Goalkeeper" },
   "pagella.goal": { it: "goal", en: "goals" },
+  "pagella.translating": { it: "Traduzione note...", en: "Translating notes..." },
+  "pagella.translateHint": {
+    it: "Notes are translated from Italian.",
+    en: "Notes are translated from Italian.",
+  },
+  "pagella.switchToEnHint": {
+    it: "Passa a EN per tradurre le note in inglese.",
+    en: "Switch to EN to translate notes to English.",
+  },
   // Export
   "export.title": { it: "Backup dati", en: "Data backup" },
   "export.description": {

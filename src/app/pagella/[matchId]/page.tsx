@@ -34,6 +34,7 @@ export default function PagellaMatchPage() {
   const [editPassword, setEditPassword] = useState("");
   const [hadExistingPagella, setHadExistingPagella] = useState(false);
   const [translatedNotes, setTranslatedNotes] = useState<Record<string, string>>({});
+  const [translatingNotes, setTranslatingNotes] = useState(false);
 
   useEffect(() => {
     if (!matchId) return;
@@ -155,7 +156,12 @@ export default function PagellaMatchPage() {
     const notesToTranslate = match.players
       .filter((mp) => mp.note?.trim())
       .map((mp) => ({ playerId: mp.playerId, text: mp.note!.trim() }));
-    if (notesToTranslate.length === 0) return;
+    if (notesToTranslate.length === 0) {
+      setTranslatedNotes({});
+      return;
+    }
+    setTranslatingNotes(true);
+    setTranslatedNotes({});
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -164,23 +170,31 @@ export default function PagellaMatchPage() {
           texts: notesToTranslate.map((n) => n.text),
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        const translations = (data.translations as string[]) || [];
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.translations)) {
         const map: Record<string, string> = {};
         notesToTranslate.forEach((n, i) => {
-          map[n.playerId] = translations[i] ?? n.text;
+          map[n.playerId] =
+            typeof data.translations[i] === "string"
+              ? String(data.translations[i]).trim()
+              : n.text;
         });
         setTranslatedNotes(map);
       }
     } catch {
       setTranslatedNotes({});
+    } finally {
+      setTranslatingNotes(false);
     }
   }, [match, lang]);
 
   useEffect(() => {
-    if (lang === "it") setTranslatedNotes({});
-    else fetchTranslations();
+    if (lang === "it") {
+      setTranslatedNotes({});
+      setTranslatingNotes(false);
+    } else {
+      fetchTranslations();
+    }
   }, [fetchTranslations, lang]);
 
   const byTeam = (m: Match) => {
@@ -291,6 +305,15 @@ export default function PagellaMatchPage() {
         <p className="mt-2 text-sport-white/60 text-sm">
           {canEdit ? t("pagella.editHelp") : t("pagella.viewHelp")}
         </p>
+        {match.players.some((mp) => mp.note?.trim()) && (
+          <p className="mt-1 text-sport-white/50 text-xs">
+            {lang === "en"
+              ? translatingNotes
+                ? t("pagella.translating")
+                : t("pagella.translateHint")
+              : t("pagella.switchToEnHint")}
+          </p>
+        )}
       </div>
 
       {error && (

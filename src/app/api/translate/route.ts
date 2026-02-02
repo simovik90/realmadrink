@@ -35,24 +35,35 @@ export async function POST(request: Request) {
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Translate the following Italian texts to English. Return ONLY a JSON array of strings, one translation per line, in the same order. No other text or markdown.
+    const textsJson = JSON.stringify(validTexts);
+    const prompt = `Translate these Italian texts to English. Return ONLY a valid JSON array of strings, same order, same length. Example: ["translation1","translation2"]
 
-Texts to translate:
-${validTexts.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+Input (JSON array): ${textsJson}
 
-JSON array:`;
+Output (JSON array only, no markdown):`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: prompt,
     });
 
-    const raw = response.text?.trim() ?? "";
-    let parsed: string[];
+    const raw = (response.text ?? "").trim();
+    if (!raw) {
+      return NextResponse.json(
+        { error: "Empty translation response" },
+        { status: 500 }
+      );
+    }
+
+    let parsed: unknown;
     try {
-      const cleaned = raw.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+      const cleaned = raw
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```\s*$/i, "")
+        .trim();
       parsed = JSON.parse(cleaned);
     } catch {
+      console.error("Translate parse error, raw:", raw.slice(0, 200));
       return NextResponse.json(
         { error: "Translation response parse error" },
         { status: 500 }
@@ -67,7 +78,7 @@ JSON array:`;
     }
 
     const translations = validTexts.map((_, i) =>
-      typeof parsed[i] === "string" ? String(parsed[i]).trim() : ""
+      typeof parsed[i] === "string" ? String(parsed[i]).trim() : validTexts[i] ?? ""
     );
 
     return NextResponse.json({ translations });
