@@ -301,15 +301,15 @@ export default function GiocatoriPage() {
                 <button
                   type="button"
                   onClick={() => toggleGoalkeeper(p)}
-                  className={`flex-shrink-0 flex items-center gap-2 min-h-[44px] px-3 rounded-lg font-display font-semibold text-sm transition ${
+                  className={`flex-shrink-0 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg font-display font-semibold text-lg transition ${
                     p.isGoalkeeper
                       ? "bg-sport-orange text-white"
                       : "bg-sport-white/25 text-sport-white border border-sport-white/30"
                   }`}
                   title={p.isGoalkeeper ? t("players.goalkeeperTitle") : t("players.goalkeeperTitleOff")}
+                  aria-label={p.isGoalkeeper ? t("players.goalkeeperTitle") : t("players.goalkeeperTitleOff")}
                 >
-                  <span>🧤</span>
-                  <span>{p.isGoalkeeper ? t("players.goalkeeper") : t("players.markGoalkeeper")}</span>
+                  🧤
                 </button>
                 <button
                   type="button"
