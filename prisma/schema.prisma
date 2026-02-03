@@ -8,16 +8,19 @@ datasource db {
 }
 
 model Player {
-  id                 String   @id @default(cuid())
-  name               String
-  isGoalkeeper       Boolean  @default(false)
-  age                Int?     // età in anni
-  practicesSport     Boolean? // pratica qualche sport
-  sportTimesPerWeek  Int?     // quante volte a settimana (0-7+)
-  hasPlayedFootball  Boolean? // ha già giocato a calcio
-  footballYearsAgo   Int?     // quanto tempo fa (anni)
-  createdAt          DateTime @default(now())
-  matches            MatchPlayer[]
+  id                     String   @id @default(cuid())
+  name                   String
+  isGoalkeeper           Boolean  @default(false)
+  age                    Int?     // età in anni
+  practicesSport         Boolean? // pratica qualche sport
+  sportTimesPerWeek      Int?     // quante volte a settimana (0-7+)
+  hasPlayedFootball       Boolean? // ha già giocato a calcio
+  footballYearsAgo       Int?     // quanto tempo fa (anni)
+  createdAt              DateTime @default(now())
+  matches                MatchPlayer[]
+  tournamentTeamPlayers  TournamentTeamPlayer[]
+  tournamentMatchPlayers TournamentMatchPlayer[]
+  tournamentRatings      TournamentRating[]
 }
 
 model Match {
@@ -50,4 +53,76 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+}
+
+model Tournament {
+  id        String   @id @default(cuid())
+  name      String?
+  date      DateTime?
+  time      String?  // es. "18:00"
+  location  String?
+  format    String   @default("round_robin")
+  numTeams  Int
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  teams     TournamentTeam[]
+  matches   TournamentMatch[]
+  ratings   TournamentRating[]
+}
+
+model TournamentTeam {
+  id           String   @id @default(cuid())
+  tournamentId String
+  teamNumber   Int
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players      TournamentTeamPlayer[]
+  matchesAs1   TournamentMatch[] @relation("Team1")
+  matchesAs2   TournamentMatch[] @relation("Team2")
+}
+
+model TournamentTeamPlayer {
+  id       String   @id @default(cuid())
+  teamId   String
+  playerId String
+  team     TournamentTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player   Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  @@unique([teamId, playerId])
+}
+
+model TournamentMatch {
+  id           String   @id @default(cuid())
+  tournamentId String
+  team1Id      String
+  team2Id      String
+  goals1       Int      @default(0)
+  goals2       Int      @default(0)
+  date         DateTime?
+  status       String   @default("scheduled")
+  tournament   Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team1        TournamentTeam @relation("Team1", fields: [team1Id], references: [id], onDelete: Cascade)
+  team2        TournamentTeam @relation("Team2", fields: [team2Id], references: [id], onDelete: Cascade)
+  players      TournamentMatchPlayer[]
+}
+
+model TournamentMatchPlayer {
+  id       String   @id @default(cuid())
+  matchId  String
+  playerId String
+  team     Int
+  goals    Int      @default(0)
+  match    TournamentMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player   Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  @@unique([matchId, playerId])
+}
+
+model TournamentRating {
+  id           String   @id @default(cuid())
+  tournamentId String
+  playerId     String
+  rating       Int?
+  note         String?
+  noteEn       String?
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  @@unique([tournamentId, playerId])
 }

@@ -123,6 +123,13 @@ export default function HomePage() {
           <span className="text-2xl">💾</span>
           {t("nav.export")}
         </Link>
+        <Link
+          href="/torneo"
+          className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-sport-white/60 text-sport-white font-display font-semibold text-lg active:scale-[0.98] transition-transform"
+        >
+          <span className="text-2xl">🏅</span>
+          {t("nav.tournament")}
+        </Link>
       </nav>
 
       <AddToHome />

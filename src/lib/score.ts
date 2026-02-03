@@ -261,3 +261,104 @@ export function distributeByScore(
 export function teamScoreSum(team: PlayerWithScore[]): number {
   return team.reduce((s, p) => s + p.score, 0);
 }
+
+/**
+ * Distribuisce i giocatori in N squadre (3-8) bilanciate per somma score.
+ * Ogni squadra ha lo stesso numero di giocatori. Greedy per minimizzare differenza score.
+ */
+export function distributeByScoreMulti(
+  players: PlayerWithScore[],
+  numTeams: number,
+  withGoalkeepers: boolean
+): PlayerWithScore[][] {
+  if (numTeams < 3 || numTeams > 8) throw new Error("numTeams must be 3-8");
+  if (players.length % numTeams !== 0) {
+    throw new Error(`Il numero di giocatori (${players.length}) deve essere divisibile per ${numTeams}`);
+  }
+  const perTeam = players.length / numTeams;
+  const sorted = [...players].sort((a, b) => {
+    if (withGoalkeepers && a.isGoalkeeper !== b.isGoalkeeper) return a.isGoalkeeper ? -1 : 1;
+    return b.score - a.score;
+  });
+  const teams: PlayerWithScore[][] = Array.from({ length: numTeams }, () => []);
+
+  for (let i = 0; i < numTeams; i++) {
+    teams[i].push(sorted[i]);
+  }
+  const assigned = new Set(sorted.slice(0, numTeams).map((p) => p.playerId));
+  const rest = sorted.slice(numTeams);
+  const restPerTeam = Math.floor(rest.length / numTeams);
+  const restRemainder = rest.length % numTeams;
+  const teamIndicesBySize = teams
+    .map((_, i) => i)
+    .sort((a, b) => teams[a].length - teams[b].length);
+  const targets = teams.map((t, i) => {
+    const getsExtra = teamIndicesBySize.indexOf(i) < restRemainder;
+    return t.length + restPerTeam + (getsExtra ? 1 : 0);
+  });
+  assignBalancedMultiWithTargets(rest, teams, targets);
+  optimizeBySwapsMulti(teams);
+  return teams;
+}
+
+function assignBalancedMultiWithTargets(
+  players: PlayerWithScore[],
+  teams: PlayerWithScore[][],
+  targets: number[]
+): void {
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  const sums = teams.map((t) => t.reduce((s, p) => s + p.score, 0));
+
+  for (const p of sorted) {
+    let bestIdx = -1;
+    let bestSum = Infinity;
+    for (let i = 0; i < teams.length; i++) {
+      if (teams[i].length < targets[i] && sums[i] < bestSum) {
+        bestIdx = i;
+        bestSum = sums[i];
+      }
+    }
+    if (bestIdx < 0) {
+      for (let i = 0; i < teams.length; i++) {
+        if (teams[i].length < targets[i]) {
+          bestIdx = i;
+          break;
+        }
+      }
+    }
+    if (bestIdx >= 0) {
+      teams[bestIdx].push(p);
+      sums[bestIdx] += p.score;
+    }
+  }
+}
+
+function optimizeBySwapsMulti(teams: PlayerWithScore[][]): void {
+  const totalSum = teams.reduce((s, t) => s + teamScoreSum(t), 0);
+  const avg = totalSum / teams.length;
+  let improved = true;
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = i + 1; j < teams.length; j++) {
+        const sumI = teamScoreSum(teams[i]);
+        const sumJ = teamScoreSum(teams[j]);
+        const dBefore = Math.abs(sumI - avg) + Math.abs(sumJ - avg);
+        for (let a = 0; a < teams[i].length && !improved; a++) {
+          for (let b = 0; b < teams[j].length && !improved; b++) {
+            const pI = teams[i][a];
+            const pJ = teams[j][b];
+            const newSumI = sumI - pI.score + pJ.score;
+            const newSumJ = sumJ - pJ.score + pI.score;
+            const dAfter = Math.abs(newSumI - avg) + Math.abs(newSumJ - avg);
+            if (dAfter < dBefore) {
+              teams[i][a] = pJ;
+              teams[j][b] = pI;
+              improved = true;
+            }
+          }
+        }
+      }
+    }
+  }
+}

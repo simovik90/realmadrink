@@ -33,38 +33,48 @@ export async function GET(request: Request) {
       matchIds = matches.map((m) => m.id);
     }
 
-    const [matchPlayers, allPlayers, totalMatches] = await Promise.all([
-      prisma.matchPlayer.findMany({
-        where: matchIds?.length ? { matchId: { in: matchIds } } : undefined,
-        include: {
-          player: {
-            select: {
-              id: true,
-              name: true,
-              age: true,
-              practicesSport: true,
-              sportTimesPerWeek: true,
-              hasPlayedFootball: true,
-              footballYearsAgo: true,
+    const [matchPlayers, tournamentMatchPlayers, allPlayers, totalMatches, tournamentMatchCount] =
+      await Promise.all([
+        prisma.matchPlayer.findMany({
+          where: matchIds?.length ? { matchId: { in: matchIds } } : undefined,
+          include: {
+            player: {
+              select: {
+                id: true,
+                name: true,
+                age: true,
+                practicesSport: true,
+                sportTimesPerWeek: true,
+                hasPlayedFootball: true,
+                footballYearsAgo: true,
+              },
             },
           },
-        },
-      }),
-      prisma.player.findMany({
-        select: {
-          id: true,
-          name: true,
-          age: true,
-          practicesSport: true,
-          sportTimesPerWeek: true,
-          hasPlayedFootball: true,
-          footballYearsAgo: true,
-        },
-      }),
-      matchIds
-        ? prisma.match.count({ where: { id: { in: matchIds } } })
-        : prisma.match.count(),
-    ]);
+        }),
+        matchIds === null
+          ? prisma.tournamentMatchPlayer.findMany({
+              where: { match: { status: "played" } },
+              include: { player: true },
+            })
+          : [],
+        prisma.player.findMany({
+          select: {
+            id: true,
+            name: true,
+            age: true,
+            practicesSport: true,
+            sportTimesPerWeek: true,
+            hasPlayedFootball: true,
+            footballYearsAgo: true,
+          },
+        }),
+        matchIds
+          ? prisma.match.count({ where: { id: { in: matchIds } } })
+          : prisma.match.count(),
+        matchIds === null
+          ? prisma.tournamentMatch.count({ where: { status: "played" } })
+          : 0,
+      ]);
 
     const byPlayer = new Map<
       string,
@@ -104,19 +114,42 @@ export async function GET(request: Request) {
         });
       }
     }
+    for (const tmp of tournamentMatchPlayers) {
+      const p = tmp.player;
+      const base: BasePlayer = {
+        age: p.age,
+        practicesSport: p.practicesSport,
+        sportTimesPerWeek: p.sportTimesPerWeek,
+        hasPlayedFootball: p.hasPlayedFootball,
+        footballYearsAgo: p.footballYearsAgo,
+      };
+      const existing = byPlayer.get(tmp.playerId);
+      if (existing) {
+        existing.goals += tmp.goals;
+        existing.presenze += 1;
+      } else {
+        byPlayer.set(tmp.playerId, {
+          name: p.name,
+          goals: tmp.goals,
+          presenze: 1,
+          base,
+        });
+      }
+    }
+    const totalMatchesWithTournaments = totalMatches + tournamentMatchCount;
     const list: PlayerStats[] = Array.from(byPlayer.values()).map((d) => ({
       goals: d.goals,
       presenze: d.presenze,
     }));
     const { groupAvgGoalsPerGame, groupAvgAttendance } = getGroupStats(
       list,
-      totalMatches
+      totalMatchesWithTournaments
     );
     const classifica = Array.from(byPlayer.entries()).map(([playerId, data]) => {
       const score = computePlayerScore(
         data.base,
         { goals: data.goals, presenze: data.presenze },
-        totalMatches,
+        totalMatchesWithTournaments,
         groupAvgGoalsPerGame,
         groupAvgAttendance
       );
@@ -130,7 +163,7 @@ export async function GET(request: Request) {
     });
     classifica.sort((a, b) => b.goals - a.goals || b.presenze - a.presenze);
     return NextResponse.json(
-      { list: classifica, totalMatches },
+      { list: classifica, totalMatches: totalMatchesWithTournaments },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
