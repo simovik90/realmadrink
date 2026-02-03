@@ -33,12 +33,13 @@ export async function GET(request: Request) {
       matchIds = matches.map((m) => m.id);
     }
 
-    const [matchPlayers, totalMatches] = await Promise.all([
+    const [matchPlayers, allPlayers, totalMatches] = await Promise.all([
       prisma.matchPlayer.findMany({
         where: matchIds?.length ? { matchId: { in: matchIds } } : undefined,
         include: {
           player: {
             select: {
+              id: true,
               name: true,
               age: true,
               practicesSport: true,
@@ -49,14 +50,38 @@ export async function GET(request: Request) {
           },
         },
       }),
+      prisma.player.findMany({
+        select: {
+          id: true,
+          name: true,
+          age: true,
+          practicesSport: true,
+          sportTimesPerWeek: true,
+          hasPlayedFootball: true,
+          footballYearsAgo: true,
+        },
+      }),
       matchIds
         ? prisma.match.count({ where: { id: { in: matchIds } } })
         : prisma.match.count(),
     ]);
+
     const byPlayer = new Map<
       string,
       { name: string; goals: number; presenze: number; base: BasePlayer }
     >();
+
+    for (const p of allPlayers) {
+      const base: BasePlayer = {
+        age: p.age,
+        practicesSport: p.practicesSport,
+        sportTimesPerWeek: p.sportTimesPerWeek,
+        hasPlayedFootball: p.hasPlayedFootball,
+        footballYearsAgo: p.footballYearsAgo,
+      };
+      byPlayer.set(p.id, { name: p.name, goals: 0, presenze: 0, base });
+    }
+
     for (const mp of matchPlayers) {
       const p = mp.player;
       const base: BasePlayer = {
