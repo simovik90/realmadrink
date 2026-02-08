@@ -10,6 +10,7 @@ datasource db {
 model Player {
   id                     String   @id @default(cuid())
   name                   String
+  imageUrl               String?  // URL o data URL dell'immagine profilo
   isGoalkeeper           Boolean  @default(false)
   age                    Int?     // età in anni
   practicesSport         Boolean? // pratica qualche sport

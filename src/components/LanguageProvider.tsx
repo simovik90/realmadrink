@@ -124,6 +124,8 @@ const DICT: Dictionary = {
   "players.add": { it: "Aggiungi giocatore", en: "Add player" },
   "players.edit": { it: "Modifica", en: "Edit" },
   "players.editPlayer": { it: "Modifica giocatore", en: "Edit player" },
+  "players.view": { it: "Vedi", en: "View" },
+  "players.viewCard": { it: "Vedi scheda giocatore", en: "View player card" },
   "players.namePlaceholder": { it: "Nome giocatore", en: "Player name" },
   "players.save": { it: "Salva", en: "Save" },
   "players.addBtn": { it: "Aggiungi", en: "Add" },
@@ -137,8 +139,8 @@ const DICT: Dictionary = {
   "players.markGoalkeeper": { it: "Segna portiere", en: "Mark goalkeeper" },
   "players.manage": { it: "Gestisci giocatori", en: "Manage players" },
   "players.manageHelp": {
-    it: "Tocca Modifica per cambiare nome e dati, o il pallino per segnare il portiere.",
-    en: "Tap Edit to change name and data, or the button to mark goalkeeper.",
+    it: "Tocca Vedi per aprire la scheda, o il pallino per segnare il portiere.",
+    en: "Tap View to open the card, or the button to mark goalkeeper.",
   },
   "players.loading": { it: "Caricamento...", en: "Loading..." },
   "players.years": { it: "anni", en: "years" },
@@ -150,6 +152,7 @@ const DICT: Dictionary = {
   "players.deleteConfirm": { it: "Eliminare questo giocatore?", en: "Delete this player?" },
   "players.goalkeeperTitle": { it: "Portiere (tocca per togliere)", en: "Goalkeeper (tap to remove)" },
   "players.goalkeeperTitleOff": { it: "Tocca per segnare come portiere", en: "Tap to mark as goalkeeper" },
+  "players.cardChangeImage": { it: "Cambia immagine", en: "Change image" },
   // Storico
   "history.title": { it: "Storico partite", en: "Match history" },
   "history.period": { it: "Periodo:", en: "Period:" },

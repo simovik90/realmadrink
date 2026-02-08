@@ -10,7 +10,7 @@
 const W1 = 0.6;
 const W2 = 0.25;
 const W3 = 0.15;
-const AGE_PEAK = 28; // età di picco per la curva
+const AGE_PEAK = 32.5; // centro del plateau 25-40
 const NEUTRAL = 50; // valore neutro 0-100 quando mancano dati
 
 export type BasePlayer = {
@@ -46,8 +46,8 @@ export function scoreBase(player: BasePlayer): number {
 /** Età: curva non lineare con picco (es. 28 anni). Range tipico 8-50. */
 function ageToScore(age: number | null): number | null {
   if (age == null || age < 5 || age > 70) return null;
-  // Gaussiana: max a AGE_PEAK, decresce ai lati
-  const sigma = 12;
+  // Gaussiana: plateau alto da 25 a 40 anni, decresce ai lati
+  const sigma = 18;
   const exp = Math.exp(-Math.pow(age - AGE_PEAK, 2) / (2 * sigma * sigma));
   return Math.round(50 + 50 * exp);
 }

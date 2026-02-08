@@ -175,7 +175,9 @@ export default function ClassificaPage() {
                   <span className="col-span-1 text-center font-display font-bold text-sport-orange">
                     {i + 1}
                   </span>
-                  <span className="col-span-3 truncate">{entry.name}</span>
+                  <Link href={`/giocatori/${entry.playerId}`} className="col-span-3 truncate text-sport-white hover:text-sport-orange transition-colors">
+                    {entry.name}
+                  </Link>
                   <span className="col-span-1 text-center font-display font-semibold">{entry.goals}</span>
                   <span className="col-span-1 text-center text-sport-white/80">{media}</span>
                   <span className="col-span-2 text-center text-sport-white/90">{entry.presenze}</span>
