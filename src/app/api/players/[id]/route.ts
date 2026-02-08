@@ -9,9 +9,16 @@ export async function GET(
     const params = context.params;
     const { id } = params instanceof Promise ? await params : params;
     if (!id) return NextResponse.json({ error: "ID mancante" }, { status: 400 });
-    const player = await prisma.player.findUnique({ where: { id } });
+    const [player, lastPagella] = await Promise.all([
+      prisma.player.findUnique({ where: { id } }),
+      prisma.matchPlayer.findFirst({
+        where: { playerId: id, rating: { not: null } },
+        orderBy: { match: { date: "desc" } },
+        select: { rating: true, note: true, noteEn: true, match: { select: { date: true } } },
+      }),
+    ]);
     if (!player) return NextResponse.json(null, { status: 404 });
-    return NextResponse.json(player);
+    return NextResponse.json({ ...player, lastRating: lastPagella });
   } catch (e) {
     return NextResponse.json({ error: "Errore lettura giocatore" }, { status: 500 });
   }

@@ -33,7 +33,7 @@ export default function GiocatoriPage() {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
-    fetch("/api/players")
+    fetch("/api/players", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         setPlayers(Array.isArray(data) ? data : []);
@@ -294,7 +294,11 @@ export default function GiocatoriPage() {
                 key={p.id}
                 className="flex items-center gap-3 touch-target min-h-[56px] px-4 py-3 rounded-xl bg-sport-white/15 backdrop-blur border border-sport-white/20"
               >
-                <Link href={`/giocatori/${p.id}`} className="flex-1 min-w-0">
+                <Link
+                  href={`/giocatori/${p.id}`}
+                  className="flex-1 min-w-0 flex flex-col"
+                  title={t("players.viewCard")}
+                >
                   <span className="font-body text-sport-white text-lg truncate block">{p.name}</span>
                   {(p.age != null || p.practicesSport || (p.sportTimesPerWeek != null && p.sportTimesPerWeek > 0) || p.hasPlayedFootball || (p.footballYearsAgo != null)) && (
                     <span className="text-sport-white/70 text-sm">
@@ -305,13 +309,9 @@ export default function GiocatoriPage() {
                       ].filter(Boolean).join(" · ")}
                     </span>
                   )}
-                </Link>
-                <Link
-                  href={`/giocatori/${p.id}`}
-                  className="flex-shrink-0 min-h-[44px] px-3 rounded-lg font-display font-semibold text-sm bg-sport-white/25 text-sport-white border border-sport-white/30 transition active:scale-95 flex items-center justify-center"
-                  title={t("players.viewCard")}
-                >
-                  {t("players.view")}
+                  <span className="text-sport-orange text-sm font-display font-semibold mt-1">
+                    {t("players.view")} →
+                  </span>
                 </Link>
                 <button
                   type="button"

@@ -153,6 +153,7 @@ const DICT: Dictionary = {
   "players.goalkeeperTitle": { it: "Portiere (tocca per togliere)", en: "Goalkeeper (tap to remove)" },
   "players.goalkeeperTitleOff": { it: "Tocca per segnare come portiere", en: "Tap to mark as goalkeeper" },
   "players.cardChangeImage": { it: "Cambia immagine", en: "Change image" },
+  "players.lastRating": { it: "Ultima pagella", en: "Last rating" },
   // Storico
   "history.title": { it: "Storico partite", en: "Match history" },
   "history.period": { it: "Periodo:", en: "Period:" },

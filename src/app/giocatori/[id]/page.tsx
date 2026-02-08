@@ -15,6 +15,12 @@ type Player = {
   sportTimesPerWeek: number | null;
   hasPlayedFootball: boolean | null;
   footballYearsAgo: number | null;
+  lastRating?: {
+    rating: number;
+    note: string | null;
+    noteEn: string | null;
+    match: { date: string };
+  } | null;
 };
 
 type ClassificaEntry = { playerId: string; goals: number; presenze: number; score: number };
@@ -24,7 +30,7 @@ const MAX_IMAGE_SIZE = 500 * 1024; // 500KB
 export default function PlayerCardPage() {
   const params = useParams();
   const id = params.id as string;
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [player, setPlayer] = useState<Player | null>(null);
   const [stats, setStats] = useState<ClassificaEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -249,6 +255,31 @@ export default function PlayerCardPage() {
             <StatBox label="Sport" value={player.practicesSport ? "✓" : "—"} />
             <StatBox label="Calcio" value={player.hasPlayedFootball ? (player.footballYearsAgo != null ? `${player.footballYearsAgo}a` : "✓") : "—"} />
           </div>
+          {/* Ultima pagella */}
+          {player.lastRating && (
+            <div className="mt-2 py-2 px-3 rounded-lg bg-amber-900/70">
+              <p className="text-[10px] font-display font-semibold text-amber-200/90 uppercase tracking-wide">
+                {t("players.lastRating")}
+              </p>
+              <p className="font-display font-bold text-amber-200">
+                {player.lastRating.rating}/10
+                {player.lastRating.match?.date && (
+                  <span className="text-xs font-normal text-amber-200/80 ml-1">
+                    ({new Date(player.lastRating.match.date).toLocaleDateString("it-IT", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })})
+                  </span>
+                )}
+              </p>
+              {(player.lastRating.note || player.lastRating.noteEn) && (
+                <p className="text-xs text-amber-200/90 mt-1 whitespace-pre-wrap break-words">
+                  {lang === "it" ? player.lastRating.note : player.lastRating.noteEn || player.lastRating.note}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
