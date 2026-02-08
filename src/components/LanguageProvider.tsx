@@ -139,8 +139,8 @@ const DICT: Dictionary = {
   "players.markGoalkeeper": { it: "Segna portiere", en: "Mark goalkeeper" },
   "players.manage": { it: "Gestisci giocatori", en: "Manage players" },
   "players.manageHelp": {
-    it: "Tocca Vedi per aprire la scheda, o il pallino per segnare il portiere.",
-    en: "Tap View to open the card, or the button to mark goalkeeper.",
+    it: "Tocca Vedi per aprire la scheda, o il guanto per segnare il portiere.",
+    en: "Tap View to open the card, or the glove to mark goalkeeper.",
   },
   "players.loading": { it: "Caricamento...", en: "Loading..." },
   "players.years": { it: "anni", en: "years" },
