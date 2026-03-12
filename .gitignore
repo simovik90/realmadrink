@@ -37,3 +37,17 @@ next-env.d.ts
 # prisma
 prisma/dev.db
 prisma/dev.db-journal
+
+# Flutter game - escludi build artifacts ma includi public/game (build output)
+game/.dart_tool/
+game/.flutter-plugins
+game/.flutter-plugins-dependencies
+game/build/
+game/.packages
+game/android/
+game/ios/
+game/linux/
+game/macos/
+game/windows/
+# public/game/ è incluso (build output da servire)
+

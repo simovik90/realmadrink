@@ -130,6 +130,22 @@ export default function HomePage() {
           <span className="text-2xl">🏅</span>
           {t("nav.tournament")}
         </Link>
+
+        {/* PULSANTE GIOCO CHAMPIONSHIP MANAGER */}
+        <Link
+          href="/game"
+          className="touch-target flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-display font-semibold text-lg active:scale-[0.98] transition-transform mt-2"
+          style={{
+            background: "linear-gradient(135deg, #1a6b4f 0%, #0d3b2e 100%)",
+            border: "2px solid #2da86a",
+            color: "#f4a261",
+            boxShadow: "0 4px 20px rgba(45,168,106,0.3)",
+          }}
+        >
+          <span className="text-2xl">🎮</span>
+          <span>Fai l&apos;allenatore</span>
+          <span className="text-xs opacity-70 ml-1">Serie A</span>
+        </Link>
       </nav>
 
       <AddToHome />
