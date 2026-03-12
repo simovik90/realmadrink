@@ -1,38 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="/">
-
+  <base href="/game/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="description" content="RealMadrink FC - Championship Manager">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="realmadrink_game">
+  <meta name="apple-mobile-web-app-title" content="RealMadrink FC">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>realmadrink_game</title>
+  <title>RealMadrink FC - Fai l'Allenatore</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body { margin: 0; background: #0d3b2e; }
+  </style>
 </head>
 <body>
+  <script>
+    // Usa CDN gstatic per CanvasKit (evita di includere 26MB nel repo)
+    window.flutterConfiguration = {
+      canvasKitBaseUrl: "https://www.gstatic.com/flutter-canvaskit/14ab1e7d679fdf7ae73f9cd4e0dbfc5b/"
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

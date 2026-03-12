@@ -50,4 +50,6 @@ game/linux/
 game/macos/
 game/windows/
 # public/game/ è incluso (build output da servire)
+# ma canvaskit viene dal CDN gstatic, non serve nel repo
+public/game/canvaskit/
 

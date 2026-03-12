@@ -23557,7 +23557,7 @@ return n}}
 A.afS.prototype={
 $1(a){var s=A.cT().b
 s=s==null?null:s.canvasKitBaseUrl
-return(s==null?"https://www.gstatic.com/flutter-canvaskit/c29809135135e262a912cf583b2c90deb9ded610/":s)+a},
+return(s==null?"canvaskit/":s)+a},
 $S:83}
 A.Si.prototype={
 dF(a,b){var s,r=this.a
