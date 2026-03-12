@@ -70268,7 +70268,7 @@ while(true)switch(s){case 0:o=q.c
 o.toString
 p=A.np(o,!1,t.T6)
 s=2
-return A.K(p.qS("https://realmadrink.vercel.app"),$async$tQ)
+return A.K(p.qS("https://realmadrink-vercel.vercel.app"),$async$tQ)
 case 2:return A.N(null,r)}})
 return A.O($async$tQ,r)},
 N(a){if(A.np(a,!0,t.T6).a===B.ip)return B.IY

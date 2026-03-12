@@ -12,7 +12,7 @@ import 'screens/match_screen.dart';
 // oppure forza l'URL di produzione se servito separatamente
 const String kApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://realmadrink.vercel.app',
+  defaultValue: 'https://realmadrink-vercel.vercel.app',
 );
 
 void main() {
